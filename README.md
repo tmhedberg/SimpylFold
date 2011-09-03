@@ -16,4 +16,9 @@ If you're using [Pathogen](https://github.com/tpope/vim-pathogen) and Git to man
 
 and you're good to go. Otherwise, clone somewhere else or just grab the tarball, and drop the plugin file into your `~/.vim/ftplugin/python`.
 
+Bugs
+----
+
+If you find any bugs, please report them and/or submit pull requests on Github! Simple is nice, but simple and correct is much better.
+
 Happy hacking!
