@@ -1,5 +1,5 @@
 let s:blank_regex = '^\s*$'
-let s:def_regex = '^\s*\%(class\|def\) .*:$'
+let s:def_regex = '^\s*\%(class\|def\) \w\+'
 
 " Determine the number of containing class or function definitions for the
 " given line
