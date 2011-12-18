@@ -15,7 +15,18 @@ function! s:NumContainingDefs(lnum)
     " than this line
     let i = a:lnum - 1
     while (getline(i) =~ s:blank_regex || indent(i) >= this_ind)
+
         let i -= 1
+
+        " If we hit the beginning of the buffer before finding a line with a
+        " lower indent level, there must be no definitions containing this
+        " line. This explicit check is required to prevent infinite looping in
+        " the syntactically invalid pathological case in which the first line
+        " or lines has an indent level greater than 0.
+        if i <= 1
+            return 0
+        endif
+
     endwhile
 
     return s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
