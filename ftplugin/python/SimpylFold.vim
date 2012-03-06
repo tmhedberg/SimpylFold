@@ -5,6 +5,11 @@ let s:def_regex = '^\s*\%(class\|def\) \w\+'
 " given line
 function! s:NumContainingDefs(lnum)
 
+    " Recall memoized result if it exists in the cache
+    if has_key(b:cache_NumContainingDefs, a:lnum)
+        return b:cache_NumContainingDefs[a:lnum]
+    endif
+
     let this_ind = indent(a:lnum)
 
     if this_ind == 0
@@ -29,12 +34,25 @@ function! s:NumContainingDefs(lnum)
 
     endwhile
 
-    return s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
+    " Memoize the return value to avoid duplication of effort on subsequent
+    " lines
+    let ncd = s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
+    let b:cache_NumContainingDefs[a:lnum] = ncd
+
+    return ncd
 
 endfunction
 
 " Compute fold level for Python code
 function! SimpylFold(lnum)
+
+    " If we are starting a new sweep of the buffer (i.e. the current line
+    " being folded comes before the previous line that was folded), initialize
+    " the cache of results of calls to `s:NumContainingDefs`
+    if !exists('b:last_folded_line') || b:last_folded_line > a:lnum
+        let b:cache_NumContainingDefs = {}
+    endif
+    let b:last_folded_line = a:lnum
 
     " If this line is blank, its fold level is equal to the minimum of its
     " neighbors' fold levels, but if the next line begins a definition, then
