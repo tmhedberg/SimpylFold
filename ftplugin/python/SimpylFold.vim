@@ -34,7 +34,7 @@ function! s:NumContainingDefs(lnum)
         " the syntactically invalid pathological case in which the first line
         " or lines has an indent level greater than 0.
         if i <= 1
-            return 0
+            return getline(1) =~ s:def_regex
         endif
 
     endwhile
