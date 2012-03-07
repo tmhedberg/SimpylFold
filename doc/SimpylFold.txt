@@ -1,0 +1,44 @@
+*SimpylFold.txt*    No-BS Python code folding for Vim
+*SimpylFold*
+
+==============================================================================
+SimpylFold
+
+Because of its reliance on significant whitespace rather than explicit block
+delimiters, properly folding Python code can be tricky. The Python syntax
+definition that comes bundled with Vim doesn't contain any fold directives at
+all, and the simplest workaround is to `:set foldmethod=indent`, which usually
+ends up folding a lot more than you really want it to.
+
+There's no shortage of Vim plugins for improved Python folding, but most seem
+to suffer from cobbled-together algorithms with bizarre, intractable bugs in
+the corner cases. SimpylFold aims to be exactly what its name suggests:
+simple, correct folding for Python. It's nothing more than it needs to be: it
+properly folds class and function/method definitions, and leaves your loops
+and conditional blocks untouched. There's no BS involved: no screwing around
+with unrelated options (which several of the other plugins do), no choice of
+algorithms to scratch your head over (because there's only one that's
+correct); it just works, simply.
+
+
+==============================================================================
+Configuration                                              *SimpylFold-config*
+
+There is no configuration necessary for SimpylFold to start working. Just
+install it, and you're good to go!
+
+                                                *SimpylFold_docstring_preview*
+
+If you want to see the first line of your docstrings appear in the fold text,
+set g:SimpylFold_docstring_preview to 1 in your .vimrc.
+
+
+==============================================================================
+Bugs                                                         *SimpylFold-bugs*
+
+If you find any bugs, please report them and/or submit pull requests on
+Github! Simple is nice, but simple and correct is much better.
+
+
+==============================================================================
+Happy hacking!
