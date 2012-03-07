@@ -90,11 +90,13 @@ function! SimpylFoldText()
     if docstring =~ ds_prefix
         let docstring = substitute(docstring, ds_prefix, '', '')
         if docstring =~ s:blank_regex
-            let docstring = nextnonblank(next)
+            let docstring =
+                \ substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
         endif
         let docstring = substitute(docstring, '"""$', '', '')
         return ' ' . docstring
     endif
+    return ''
 endfunction
 
 setlocal foldexpr=SimpylFold(v:lnum)
