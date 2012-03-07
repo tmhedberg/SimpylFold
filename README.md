@@ -16,6 +16,13 @@ If you're using [Pathogen](https://github.com/tpope/vim-pathogen) and Git to man
 
 and you're good to go. Otherwise, clone somewhere else or just grab the tarball, and drop the plugin file into your `~/.vim/ftplugin/python`.
 
+Configuration
+-------------
+
+No configuration is necessary. However, if you want to enable previewing of your folded classes' and functions' docstrings in the fold text, add the following to your .vimrc:
+
+    let g:SimpylFold_docstring_preview = 1
+
 Bugs
 ----
 
