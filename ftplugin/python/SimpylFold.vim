@@ -1,7 +1,7 @@
-if exists('g:loaded_SimpylFold')
+if exists('b:loaded_SimpylFold')
     finish
 endif
-let loaded_SimpylFold = 1
+let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '^\s*$'
 let s:def_regex = '^\s*\%(class\|def\) \w\+'
