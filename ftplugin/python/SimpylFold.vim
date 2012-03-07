@@ -81,5 +81,25 @@ function! SimpylFold(lnum)
 
 endfunction
 
+" Obtain the first line of the docstring for the folded class or function, if
+" any exists, for use in the fold text
+function! SimpylFoldText()
+    let next = nextnonblank(v:foldstart + 1)
+    let docstring = getline(next)
+    let ds_prefix = '^\s*\%(["'']\)\{3}'
+    if docstring =~ ds_prefix
+        let docstring = substitute(docstring, ds_prefix, '', '')
+        if docstring =~ s:blank_regex
+            let docstring = nextnonblank(next)
+        endif
+        let docstring = substitute(docstring, '"""$', '', '')
+        return ' ' . docstring
+    endif
+endfunction
+
 setlocal foldexpr=SimpylFold(v:lnum)
 setlocal foldmethod=expr
+
+if exists('SimpylFold_docstring_preview') && SimpylFold_docstring_preview
+    setlocal foldtext=foldtext()\ .\ SimpylFoldText()
+endif
