@@ -65,7 +65,9 @@ function! SimpylFold(lnum)
     let line = getline(a:lnum)
     if line =~ s:blank_regex
         let next_line = nextnonblank(a:lnum)
-        if getline(next_line) =~ s:def_regex
+        if next_line == 0
+            return 0
+        elseif getline(next_line) =~ s:def_regex
             return SimpylFold(next_line) - 1
         else
             return -1
