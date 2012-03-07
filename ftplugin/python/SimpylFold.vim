@@ -91,7 +91,7 @@ endfunction
 function! SimpylFoldText()
     let next = nextnonblank(v:foldstart + 1)
     let docstring = getline(next)
-    let ds_prefix = '^\s*\%(["'']\)\{3}'
+    let ds_prefix = '^\s*\%(\%(["'']\)\{3}\|[''"]\ze[^''"]\)'
     if docstring =~ ds_prefix
         let quote_char = docstring[match(docstring, '["'']')]
         let docstring = substitute(docstring, ds_prefix, '', '')
@@ -99,7 +99,7 @@ function! SimpylFoldText()
             let docstring =
                 \ substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
         endif
-        let docstring = substitute(docstring, quote_char . '\{3}$', '', '')
+        let docstring = substitute(docstring, quote_char . '\{,3}$', '', '')
         return ' ' . docstring
     endif
     return ''
