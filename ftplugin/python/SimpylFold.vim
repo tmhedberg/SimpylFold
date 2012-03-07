@@ -81,5 +81,5 @@ function! SimpylFold(lnum)
 
 endfunction
 
-set foldexpr=SimpylFold(v:lnum)
-set foldmethod=expr
+setlocal foldexpr=SimpylFold(v:lnum)
+setlocal foldmethod=expr
