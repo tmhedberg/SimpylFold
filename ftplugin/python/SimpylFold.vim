@@ -5,8 +5,9 @@ let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '^\s*$'
 let s:def_regex = '^\s*\%(class\|def\) \w\+'
-let s:docstring_start_regex = '^\s*"""\%(.*"""\s*$\)\@!'
-let s:docstring_end_regex = '"""\s*$'
+let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
+let s:docstring_end_single_regex = '''''''\s*$'
+let s:docstring_end_double_regex = '"""\s*$'
 
 " Determine the number of containing class or function definitions for the
 " given line
@@ -77,12 +78,18 @@ function! SimpylFold(lnum)
         endif
     endif
 
-    if !b:in_docstring && line =~ s:docstring_start_regex
+    let docstring_match = matchlist(line, s:docstring_start_regex)
+    if !b:in_docstring && len(docstring_match)
         let this_fl = s:NumContainingDefs(a:lnum) + 1
         let b:in_docstring = 1
+        if docstring_match[1] == '"""'
+            let b:docstring_end_regex = s:docstring_end_double_regex
+        else
+            let b:docstring_end_regex = s:docstring_end_single_regex
+        endif
     elseif b:in_docstring
         let this_fl = s:NumContainingDefs(a:lnum) + 1
-        if line =~ s:docstring_end_regex
+        if line =~ b:docstring_end_regex
             let b:in_docstring = 0
         endif
     else
