@@ -24,7 +24,17 @@ function! s:NumContainingDefs(lnum)
     " Walk backwards to the previous non-blank line with a lower indent level
     " than this line
     let i = a:lnum - 1
-    while (getline(i) =~ s:blank_regex || indent(i) >= this_ind)
+    while 1
+        if getline(i) !~ s:blank_regex
+            let i_ind = indent(i)
+            if i_ind < this_ind
+                let ncd = s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
+                break
+            elseif i_ind == this_ind && has_key(b:cache_NumContainingDefs, i)
+                let ncd = b:cache_NumContainingDefs[i]
+                break
+            endif
+        endif
 
         let i -= 1
 
@@ -34,14 +44,14 @@ function! s:NumContainingDefs(lnum)
         " the syntactically invalid pathological case in which the first line
         " or lines has an indent level greater than 0.
         if i <= 1
-            return getline(1) =~ s:def_regex
+            let ncd = getline(1) =~ s:def_regex
+            break
         endif
 
     endwhile
 
     " Memoize the return value to avoid duplication of effort on subsequent
     " lines
-    let ncd = s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
     let b:cache_NumContainingDefs[a:lnum] = ncd
 
     return ncd
