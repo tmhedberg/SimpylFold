@@ -89,7 +89,8 @@ function! SimpylFold(lnum)
     endif
 
     let docstring_match = matchlist(line, s:docstring_start_regex)
-    if !b:in_docstring && len(docstring_match)
+    if !b:in_docstring && getline(a:lnum - 1) =~ s:def_regex &&
+        \ len(docstring_match)
         let this_fl = s:NumContainingDefs(a:lnum) + 1
         let b:in_docstring = 1
         if docstring_match[1] == '"""'
