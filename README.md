@@ -23,6 +23,10 @@ No configuration is necessary. However, if you want to enable previewing of your
 
     let g:SimpylFold_docstring_preview = 1
 
+And if you don't want to see your docstrings folded, add this:
+
+    let g:SimpylFold_fold_docstring = 0
+
 Bugs
 ----
 
