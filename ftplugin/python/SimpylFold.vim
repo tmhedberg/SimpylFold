@@ -89,6 +89,8 @@ function! SimpylFold(lnum)
         endif
     endif
 
+    let fold_docstrings =
+        \ !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
     let docstring_match = matchlist(line, s:docstring_start_regex)
     let prev_line = getline(a:lnum - 1)
     if !b:in_docstring &&
@@ -97,7 +99,7 @@ function! SimpylFold(lnum)
           \ prev_line =~ s:multiline_def_end_regex
         \ ) &&
         \ len(docstring_match)
-        let this_fl = s:NumContainingDefs(a:lnum) + 1
+        let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
         let b:in_docstring = 1
         if docstring_match[1] == '"""'
             let b:docstring_end_regex = s:docstring_end_double_regex
@@ -105,7 +107,7 @@ function! SimpylFold(lnum)
             let b:docstring_end_regex = s:docstring_end_single_regex
         endif
     elseif b:in_docstring
-        let this_fl = s:NumContainingDefs(a:lnum) + 1
+        let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
         if line =~ b:docstring_end_regex
             let b:in_docstring = 0
         endif
