@@ -8,13 +8,35 @@ There's no shortage of Vim plugins for improved Python folding, but most seem to
 Installation
 ------------
 
+### Pathogen
+
 If you're using [Pathogen](https://github.com/tpope/vim-pathogen) and Git to manage your Vim plugins (highly recommended), you can just
 
     cd ~/.vim
     git submodule add https://github.com/tmhedberg/SimpylFold.git bundle/SimpylFold
     git submodule init
 
-and you're good to go. Otherwise, clone somewhere else or just grab the tarball, and drop the plugin file into your `~/.vim/ftplugin/python`.
+and you're good to go. 
+
+### Vundle
+
+If you use [Vundle](https://github.com/gmarik/Vundle.vim) then put in your `.vimrc`:
+
+    Bundle 'tmhedberg/SimpylFold'
+
+and then launch `vim` and run `:PluginInstall`.
+    
+### NeoBundle
+
+If you use [NeoBundle](https://github.com/Shougo/neobundle.vim) then put in your `.vimrc`:
+
+    NeoBundle 'tmhedberg/SimpylFold'
+
+and then launch `vim` and run `:NeoBundleInstall`.
+
+### Manually
+
+If you insist on doing this manually, then just clone this repo somewhere or just grab the tarball, and drop the plugin file into your `~/.vim/ftplugin/python`.
 
 Configuration
 -------------
