@@ -5,6 +5,7 @@ let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '^\s*$'
 let s:def_regex = '^\s*\%(class\|def\) \w\+'
+let s:closing_regex = '^\s*):\s*$'
 let s:multiline_def_end_regex = '):$'
 let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
@@ -25,9 +26,7 @@ function! s:NumContainingDefs(lnum)
     " >>> def f(
     " ...	a
     " ... ):  # this line
-    let closing_bracket = getline(a:lnum) =~ '^\s*):'
-
-    if this_ind == 0 && !closing_bracket
+    if this_ind == 0 && getline(a:lnum) !~ s:closing_regex
         return 0
     endif
 
@@ -36,7 +35,8 @@ function! s:NumContainingDefs(lnum)
     " than this line
     let i = a:lnum - 1
     while 1
-        if getline(i) !~ s:blank_regex
+	let line = getline(i)
+        if line !~ s:blank_regex && line !~ s:closing_regex
             let i_ind = indent(i)
             if i_ind < this_ind
                 let ncd = s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
