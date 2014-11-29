@@ -21,9 +21,16 @@ function! s:NumContainingDefs(lnum)
 
     let this_ind = indent(a:lnum)
 
-    if this_ind == 0
+    " Check closing bracket
+    " >>> def f(
+    " ...	a
+    " ... ):  # this line
+    let closing_bracket = getline(a:lnum) =~ '^\s*):'
+
+    if this_ind == 0 && !closing_bracket
         return 0
     endif
+
 
     " Walk backwards to the previous non-blank line with a lower indent level
     " than this line
@@ -34,7 +41,7 @@ function! s:NumContainingDefs(lnum)
             if i_ind < this_ind
                 let ncd = s:NumContainingDefs(i) + (getline(i) =~ s:def_regex)
                 break
-            elseif i_ind == this_ind && has_key(b:cache_NumContainingDefs, i)
+            elseif (i_ind == this_ind || closing_bracket) && has_key(b:cache_NumContainingDefs, i)
                 let ncd = b:cache_NumContainingDefs[i]
                 break
             endif
