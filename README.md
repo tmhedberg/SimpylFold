@@ -22,7 +22,7 @@ and you're good to go.
 
 If you use [Vundle](https://github.com/gmarik/Vundle.vim) then put in your `.vimrc`:
 
-    Bundle 'tmhedberg/SimpylFold'
+    Plugin 'tmhedberg/SimpylFold'
 
 and then launch `vim` and run `:PluginInstall`.
     
