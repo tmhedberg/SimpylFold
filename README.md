@@ -49,6 +49,13 @@ And if you don't want to see your docstrings folded, add this:
 
     let g:SimpylFold_fold_docstring = 0
 
+In order for SimpylFold to be properly loaded in certain cases, you'll have to add lines like the following to your `.vimrc` (see issue #27):
+
+```vim
+autocmd BufWinEnter *.py setlocal foldexpr=SimpylFold(v:lnum) foldmethod=expr
+autocmd BufWinLeave *.py setlocal foldexpr< foldmethod<
+```
+
 Bugs
 ----
 
