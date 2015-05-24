@@ -56,6 +56,8 @@ autocmd BufWinEnter *.py setlocal foldexpr=SimpylFold(v:lnum) foldmethod=expr
 autocmd BufWinLeave *.py setlocal foldexpr< foldmethod<
 ```
 
+If you have the above options set to different values anywhere (e.g. setting `foldmethod=syntax` in `.vimrc`, SimpylFold won't work properly.
+
 Bugs
 ----
 
