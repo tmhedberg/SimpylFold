@@ -4,7 +4,11 @@ endif
 let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '\v^\s*(\#.*)?$'
-let s:def_regex = '^\%(\s*\%(class\|def\) \w\+\|if\s*__name__\s*==\s*''__main__'':\s*\)'
+if &ft == 'pyrex' || &ft == 'cython'
+    let b:def_regex = '\v^\s*%(%(class|def|cdef|cpdef|ctypedef) \w+)|cdef:'
+else
+    let b:def_regex = '^\%(\s*\%(class\|def\) \w\+\|if\s*__name__\s*==\s*''__main__'':\s*\)'
+endif
 let s:multiline_def_end_regex = '):$'
 let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
@@ -50,7 +54,7 @@ function! s:NumContainingDefs(lnum)
         if getline(i) !~ s:blank_regex
             let i_ind = indent(i)
             if i_ind < this_ind
-                let ncd = s:NumContainingDefs(i) + (getline(i) =~# s:def_regex)
+                let ncd = s:NumContainingDefs(i) + (getline(i) =~# b:def_regex)
                 break
             elseif i_ind == this_ind && has_key(b:cache_NumContainingDefs, i)
                 let ncd = b:cache_NumContainingDefs[i]
@@ -66,7 +70,7 @@ function! s:NumContainingDefs(lnum)
         " the syntactically invalid pathological case in which the first line
         " or lines has an indent level greater than 0.
         if i <= 1
-            let ncd = getline(1) =~# s:def_regex
+            let ncd = getline(1) =~# b:def_regex
             break
         endif
 
@@ -100,7 +104,7 @@ function! SimpylFold(lnum)
         let next_line = s:NextNonBlankOrCommentLine(a:lnum)
         if next_line == 0
             return 0
-        elseif getline(next_line) =~# s:def_regex
+        elseif getline(next_line) =~# b:def_regex
             return SimpylFold(next_line) - 1
         else
             return -1
@@ -113,7 +117,7 @@ function! SimpylFold(lnum)
     let prev_line = getline(a:lnum - 1)
     if !b:in_docstring &&
         \ (
-          \ prev_line =~# s:def_regex ||
+          \ prev_line =~# b:def_regex ||
           \ prev_line =~ s:multiline_def_end_regex
         \ ) &&
         \ len(docstring_match)
@@ -132,12 +136,12 @@ function! SimpylFold(lnum)
     else
         " Otherwise, its fold level is equal to its number of containing
         " definitions, plus 1, if this line starts a definition of its own
-        let this_fl = s:NumContainingDefs(a:lnum) + (line =~# s:def_regex)
+        let this_fl = s:NumContainingDefs(a:lnum) + (line =~# b:def_regex)
 
     endif
     " If the very next line starts a definition with the same fold level as
     " this one, explicitly indicate that a fold ends here
-    if getline(a:lnum + 1) =~# s:def_regex && SimpylFold(a:lnum + 1) == this_fl
+    if getline(a:lnum + 1) =~# b:def_regex && SimpylFold(a:lnum + 1) == this_fl
         return '<' . this_fl
     else
         return this_fl
