@@ -58,6 +58,11 @@ autocmd BufWinLeave *.py setlocal foldexpr< foldmethod<
 
 If you have the above options set to different values anywhere (e.g. setting `foldmethod=syntax` in `.vimrc`, SimpylFold won't work properly.
 
+Usage
+-----
+
+SimpylFold doesn't define any custom commands. Just use Vim's built-in folding commands to expand and collapse folds. The most basic commands are `zc` to close a fold and `zo` to open one. See `:help fold-commands` for full documentation.
+
 Bugs
 ----
 
