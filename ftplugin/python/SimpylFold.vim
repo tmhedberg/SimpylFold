@@ -3,7 +3,7 @@ if exists('b:loaded_SimpylFold')
 endif
 let b:loaded_SimpylFold = 1
 
-let s:blank_regex = '^\s*$'
+let s:blank_regex = '\v^\s*(\#.*)?$'
 let s:def_regex = '^\s*\%(class\|def\) \w\+'
 let s:multiline_def_end_regex = '):$'
 let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
