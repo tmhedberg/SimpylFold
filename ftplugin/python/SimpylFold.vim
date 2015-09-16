@@ -5,6 +5,7 @@ let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '\v^\s*(\#.*)?$'
 let s:def_regex = '^\s*\%(class\|def\) \w\+'
+let s:closing_regex = '^\s*):\s*$'
 let s:multiline_def_end_regex = '):$'
 let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
@@ -21,20 +22,26 @@ function! s:NumContainingDefs(lnum)
 
     let this_ind = indent(a:lnum)
 
-    if this_ind == 0
+    " Check closing bracket
+    " >>> def f(
+    " ...	a
+    " ... ):  # this line
+    if this_ind == 0 && getline(a:lnum) !~ s:closing_regex
         return 0
     endif
+
 
     " Walk backwards to the previous non-blank line with a lower indent level
     " than this line
     let i = a:lnum - 1
     while 1
-        if getline(i) !~ s:blank_regex
+	let line = getline(i)
+        if line !~ s:blank_regex && line !~ s:closing_regex
             let i_ind = indent(i)
             if i_ind < this_ind
                 let ncd = s:NumContainingDefs(i) + (getline(i) =~# s:def_regex)
                 break
-            elseif i_ind == this_ind && has_key(b:cache_NumContainingDefs, i)
+            elseif (i_ind == this_ind || closing_bracket) && has_key(b:cache_NumContainingDefs, i)
                 let ncd = b:cache_NumContainingDefs[i]
                 break
             endif
