@@ -10,6 +10,23 @@ let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
 
+" Returns the next non-blank line, checking for our definition of blank using
+" the s:blank_regex variable described above.
+function! s:NextNonBlankOrCommentLine(lnum)
+
+    let nnb = a:lnum + 1
+    while nnb > 0
+        let nnb = nextnonblank(nnb)
+        if nnb == 0 || getline(nnb) !~ s:blank_regex
+            return nnb
+        endif
+
+        let nnb += 1
+    endwhile
+
+    return -2
+endfunction
+
 " Determine the number of containing class or function definitions for the
 " given line
 function! s:NumContainingDefs(lnum)
@@ -79,7 +96,7 @@ function! SimpylFold(lnum)
     " this line should fold at one level below the next
     let line = getline(a:lnum)
     if line =~ s:blank_regex
-        let next_line = nextnonblank(a:lnum)
+        let next_line = s:NextNonBlankOrCommentLine(a:lnum)
         if next_line == 0
             return 0
         elseif getline(next_line) =~# s:def_regex
