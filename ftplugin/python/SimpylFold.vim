@@ -4,11 +4,29 @@ endif
 let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '\v^\s*(\#.*)?$'
-let s:def_regex = '^\s*\%(class\|def\) \w\+'
+let s:def_regex = '^\%(\s*\%(class\|def\) \w\+\|if\s*__name__\s*==\s*''__main__'':\s*\)'
 let s:multiline_def_end_regex = '):$'
 let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
+
+" Returns the next non-blank line, checking for our definition of blank using
+" the s:blank_regex variable described above.
+function! s:NextNonBlankOrCommentLine(lnum)
+
+    let nnb = a:lnum + 1
+    while nnb > 0
+        let nnb = nextnonblank(nnb)
+        if nnb == 0 || getline(nnb) !~ s:blank_regex
+            return nnb
+        endif
+
+        let nnb += 1
+    endwhile
+    " this return statement should never be reached, since nextnonblank()
+    " should never return a negative number.  It returns 0 when it reaches EOF.
+    return -2
+endfunction
 
 " Determine the number of containing class or function definitions for the
 " given line
@@ -79,7 +97,7 @@ function! SimpylFold(lnum)
     " this line should fold at one level below the next
     let line = getline(a:lnum)
     if line =~ s:blank_regex
-        let next_line = nextnonblank(a:lnum)
+        let next_line = s:NextNonBlankOrCommentLine(a:lnum)
         if next_line == 0
             return 0
         elseif getline(next_line) =~# s:def_regex
