@@ -23,7 +23,8 @@ function! s:NextNonBlankOrCommentLine(lnum)
 
         let nnb += 1
     endwhile
-
+    " this return statement should never be reached, since nextnonblank()
+    " should never return a negative number.  It returns 0 when it reaches EOF.
     return -2
 endfunction
 
