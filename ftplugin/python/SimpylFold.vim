@@ -6,7 +6,7 @@ let b:loaded_SimpylFold = 1
 let s:blank_regex = '\v^\s*(\#.*)?$'
 let s:def_regex = '^\%(\s*\%(class\|def\) \w\+\|if\s*__name__\s*==\s*''__main__'':\s*\)'
 let s:multiline_def_end_regex = '):$'
-let s:docstring_start_regex = '^\s*\("""\|''''''\)\%(.*\1\s*$\)\@!'
+let s:docstring_start_regex = '^\s*\("""\|r"""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
 
@@ -119,10 +119,10 @@ function! SimpylFold(lnum)
         \ len(docstring_match)
         let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
         let b:in_docstring = 1
-        if docstring_match[1] == '"""'
-            let b:docstring_end_regex = s:docstring_end_double_regex
-        else
+        if docstring_match[1] == "''''''"
             let b:docstring_end_regex = s:docstring_end_single_regex
+        else
+            let b:docstring_end_regex = s:docstring_end_double_regex
         endif
     elseif b:in_docstring
         let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
