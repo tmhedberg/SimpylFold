@@ -119,7 +119,7 @@ function! SimpylFold(lnum)
         \ len(docstring_match)
         let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
         let b:in_docstring = 1
-        if docstring_match[1] =~ '[rR]\?"""'
+        if docstring_match[1] == '"""'
             let b:docstring_end_regex = s:docstring_end_double_regex
         else
             let b:docstring_end_regex = s:docstring_end_single_regex
