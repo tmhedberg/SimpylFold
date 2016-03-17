@@ -14,6 +14,12 @@ let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
 
+if exists('SimpylFold_docstring_level')
+    let s:docstring_level = SimpylFold_docstring_level
+else
+    let s:docstring_level = -1
+end
+
 " Returns the next non-blank line, checking for our definition of blank using
 " the s:blank_regex variable described above.
 function! s:NextNonBlankOrCommentLine(lnum)
@@ -121,7 +127,13 @@ function! SimpylFold(lnum)
           \ prev_line =~ s:multiline_def_end_regex
         \ ) &&
         \ len(docstring_match)
-        let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
+
+        if s:docstring_level == -1
+            let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
+        else
+            let this_fl = s:docstring_level
+        end
+
         let b:in_docstring = 1
         if docstring_match[1] == '"""'
             let b:docstring_end_regex = s:docstring_end_double_regex
@@ -129,7 +141,12 @@ function! SimpylFold(lnum)
             let b:docstring_end_regex = s:docstring_end_single_regex
         endif
     elseif b:in_docstring
-        let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
+        if s:docstring_level == -1
+            let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
+        else
+            let this_fl = s:docstring_level
+        end
+
         if line =~ b:docstring_end_regex
             let b:in_docstring = 0
         endif
