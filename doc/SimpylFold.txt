@@ -32,6 +32,12 @@ install it, and you're good to go!
 If you want to see the first line of your docstrings appear in the fold text,
 set g:SimpylFold_docstring_preview to 1 in your .vimrc.
 
+                                                  *SimpylFold_docstring_level*
+
+If you want to set a override the fold level for docstrings (like setting a
+high level so only docstrings get folded) this value will be the foldlevel for
+all of the docstring folds.
+
 
 ==============================================================================
 Bugs                                                         *SimpylFold-bugs*
