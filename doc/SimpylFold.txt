@@ -34,9 +34,9 @@ set g:SimpylFold_docstring_preview to 1 in your .vimrc.
 
                                                   *SimpylFold_docstring_level*
 
-If you want to set a override the fold level for docstrings (like setting a
-high level so only docstrings get folded) this value will be the foldlevel for
-all of the docstring folds.
+If you want to override the fold level for docstrings (like setting a high
+level so only docstrings get folded) this value will be used as the fold level
+for all of the docstring folds.
 
 
 ==============================================================================
