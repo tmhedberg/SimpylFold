@@ -13,11 +13,18 @@ let s:multiline_def_end_regex = '):$'
 let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
+let s:import_start_regex = '^\%(from\|import\)'
 
 if exists('SimpylFold_docstring_level')
     let s:docstring_level = SimpylFold_docstring_level
 else
     let s:docstring_level = -1
+end
+
+if exists('SimpylFold_import_level')
+    let s:import_level = SimpylFold_import_level
+else
+    let s:import_level = -1
 end
 
 " Returns the next non-blank line, checking for our definition of blank using
@@ -99,6 +106,7 @@ function! SimpylFold(lnum)
     if !exists('b:last_folded_line') || b:last_folded_line > a:lnum
         let b:cache_NumContainingDefs = {}
         let b:in_docstring = 0
+        let b:in_import = 0
     endif
     let b:last_folded_line = a:lnum
 
@@ -119,7 +127,10 @@ function! SimpylFold(lnum)
 
     let fold_docstrings =
         \ !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
+    let fold_imports =
+        \ !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     let docstring_match = matchlist(line, s:docstring_start_regex)
+    let import_match = matchlist(line, s:import_start_regex)
     let prev_line = getline(a:lnum - 1)
     if !b:in_docstring &&
         \ (
@@ -150,6 +161,24 @@ function! SimpylFold(lnum)
         if line =~ b:docstring_end_regex
             let b:in_docstring = 0
         endif
+    elseif b:in_import == 1
+        if s:import_level == -1
+            let this_fl = s:NumContainingDefs(a:lnum) + fold_imports
+        else
+            let this_fl = s:import_level
+        end
+
+        if line !~ b:import_start_regex && line !~ b:blank_regex
+            let b:in_import = 0
+        endif
+    elseif b:in_import == 0 && len(import_match)
+        b:in_import = 1
+
+        if s:import_level == -1
+            let this_fl = s:NumContainingDefs(a:lnum) + fold_imports
+        else
+            let this_fl = s:import_level
+        end
     else
         " Otherwise, its fold level is equal to its number of containing
         " definitions, plus 1, if this line starts a definition of its own
