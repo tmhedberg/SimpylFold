@@ -5,7 +5,7 @@ let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '\v^\s*(\#.*)?$'
 if &ft == 'pyrex' || &ft == 'cython'
-    let b:def_regex = '\v^\s*%(%(class|def|%(async\s+)?def|cdef|cpdef|ctypedef)\s+\w+)|cdef\s*:\s*'
+    let b:def_regex = '\v^\s*%(%(class|%(async\s+)?def|cdef|cpdef|ctypedef)\s+\w+)|cdef\s*:\s*'
 else
     let b:def_regex = '\v^\s*%(class|%(async\s+)?def)\s+\w+|if\s*__name__\s*\=\=\s*%("__main__"|''__main__'')\s*:\s*'
 endif
