@@ -27,6 +27,23 @@ else
     let s:import_level = -1
 end
 
+function! s:GetLine(lnum)
+    let line = getline(a:lnum)
+    if line =~ '^\s*):\s*$'
+        let line = "    " . line
+    endif
+    return line
+endfunction
+
+function! s:GetIndent(lnum)
+    let ind = indent(a:lnum)
+    let line = getline(a:lnum)
+    if line =~ '^\s*):\s*$'
+        let ind = 4 + ind
+    endif
+    return ind
+endfunction
+
 " Returns the next non-blank line, checking for our definition of blank using
 " the s:blank_regex variable described above.
 function! s:NextNonBlankOrCommentLine(lnum)
@@ -34,7 +51,7 @@ function! s:NextNonBlankOrCommentLine(lnum)
     let nnb = a:lnum + 1
     while nnb > 0
         let nnb = nextnonblank(nnb)
-        if nnb == 0 || getline(nnb) !~ s:blank_regex
+        if nnb == 0 || s:GetLine(nnb) !~ s:blank_regex
             return nnb
         endif
 
@@ -48,13 +65,12 @@ endfunction
 " Determine the number of containing class or function definitions for the
 " given line
 function! s:NumContainingDefs(lnum)
-
     " Recall memoized result if it exists in the cache
     if has_key(b:cache_NumContainingDefs, a:lnum)
         return b:cache_NumContainingDefs[a:lnum]
     endif
 
-    let this_ind = indent(a:lnum)
+    let this_ind = s:GetIndent(a:lnum)
 
     if this_ind == 0
         return 0
@@ -64,10 +80,10 @@ function! s:NumContainingDefs(lnum)
     " than this line
     let i = a:lnum - 1
     while 1
-        if getline(i) !~ s:blank_regex
-            let i_ind = indent(i)
+        if s:GetLine(i) !~ s:blank_regex
+            let i_ind = s:GetIndent(i)
             if i_ind < this_ind
-                let ncd = s:NumContainingDefs(i) + (getline(i) =~# b:def_regex)
+                let ncd = s:NumContainingDefs(i) + (s:GetLine(i) =~# b:def_regex)
                 break
             elseif i_ind == this_ind && has_key(b:cache_NumContainingDefs, i)
                 let ncd = b:cache_NumContainingDefs[i]
@@ -83,7 +99,7 @@ function! s:NumContainingDefs(lnum)
         " the syntactically invalid pathological case in which the first line
         " or lines has an indent level greater than 0.
         if i <= 1
-            let ncd = getline(1) =~# b:def_regex
+            let ncd = s:GetLine(1) =~# b:def_regex
             break
         endif
 
@@ -99,7 +115,6 @@ endfunction
 
 " Compute fold level for Python code
 function! SimpylFold(lnum)
-
     " If we are starting a new sweep of the buffer (i.e. the current line
     " being folded comes before the previous line that was folded), initialize
     " the cache of results of calls to `s:NumContainingDefs`
@@ -113,12 +128,12 @@ function! SimpylFold(lnum)
     " If this line is blank, its fold level is equal to the minimum of its
     " neighbors' fold levels, but if the next line begins a definition, then
     " this line should fold at one level below the next
-    let line = getline(a:lnum)
+    let line = s:GetLine(a:lnum)
     if line =~ s:blank_regex
         let next_line = s:NextNonBlankOrCommentLine(a:lnum)
         if next_line == 0
             return 0
-        elseif getline(next_line) =~# b:def_regex
+        elseif s:GetLine(next_line) =~# b:def_regex
             return SimpylFold(next_line) - 1
         else
             return -1
@@ -131,7 +146,7 @@ function! SimpylFold(lnum)
         \ !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     let docstring_match = matchlist(line, s:docstring_start_regex)
     let import_match = matchlist(line, s:import_start_regex)
-    let prev_line = getline(a:lnum - 1)
+    let prev_line = s:GetLine(a:lnum - 1)
     if !b:in_docstring &&
         \ (
           \ prev_line =~# b:def_regex ||
@@ -187,7 +202,7 @@ function! SimpylFold(lnum)
     endif
     " If the very next line starts a definition with the same fold level as
     " this one, explicitly indicate that a fold ends here
-    if getline(a:lnum + 1) =~# b:def_regex && SimpylFold(a:lnum + 1) == this_fl
+    if s:GetLine(a:lnum + 1) =~# b:def_regex && SimpylFold(a:lnum + 1) == this_fl
         return '<' . this_fl
     else
         return this_fl
@@ -199,14 +214,14 @@ endfunction
 " any exists, for use in the fold text
 function! SimpylFoldText()
     let next = nextnonblank(v:foldstart + 1)
-    let docstring = getline(next)
+    let docstring = s:GetLine(next)
     let ds_prefix = '^\s*\%(\%(["'']\)\{3}\|[''"]\ze[^''"]\)'
     if docstring =~ ds_prefix
         let quote_char = docstring[match(docstring, '["'']')]
         let docstring = substitute(docstring, ds_prefix, '', '')
         if docstring =~ s:blank_regex
             let docstring =
-                \ substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
+                \ substitute(s:GetLine(nextnonblank(next + 1)), '^\s*', '', '')
         endif
         let docstring = substitute(docstring, quote_char . '\{,3}$', '', '')
         return ' ' . docstring
