@@ -172,7 +172,7 @@ function! SimpylFold(lnum)
             let b:in_import = 0
         endif
     elseif b:in_import == 0 && len(import_match)
-        b:in_import = 1
+        let b:in_import = 1
 
         if s:import_level == -1
             let this_fl = s:NumContainingDefs(a:lnum) + fold_imports
