@@ -183,7 +183,7 @@ function! SimpylFold(lnum)
             let this_fl = s:import_level
         end
 
-        if line !~ b:import_start_regex && line !~ b:blank_regex
+        if line !~ s:import_start_regex && line !~ s:blank_regex
             let b:in_import = 0
         endif
     elseif b:in_import == 0 && len(import_match)
