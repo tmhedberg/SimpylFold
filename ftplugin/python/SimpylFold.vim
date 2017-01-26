@@ -14,6 +14,9 @@ let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
 let s:import_start_regex = '^\%(from\|import\)'
+let s:import_cont_regex = 'from.*\((\)[^)]*$\|.*\(\\\)$'
+let s:import_end_paren_regex = ')\s*$'
+let s:import_end_esc_regex = '[^\\]$'
 
 if exists('SimpylFold_docstring_level')
     let s:docstring_level = SimpylFold_docstring_level
@@ -183,11 +186,21 @@ function! SimpylFold(lnum)
             let this_fl = s:import_level
         end
 
-        if line !~ b:import_start_regex && line !~ b:blank_regex
+        if line =~ b:import_end_regex
             let b:in_import = 0
         endif
     elseif b:in_import == 0 && len(import_match)
         let b:in_import = 1
+
+        let import_cont_match = matchlist(line, s:import_cont_regex)
+
+        if len(import_cont_match) && import_cont_match[1] == '('
+            let b:import_end_regex = s:import_end_paren_regex
+        elseif len(import_cont_match) && import_cont_match[2] == '\'
+            let b:import_end_regex = s:import_end_esc_regex
+        else
+            let b:in_import = 0
+        end
 
         if s:import_level == -1
             let this_fl = s:NumContainingDefs(a:lnum) + fold_imports
