@@ -16,7 +16,7 @@ let s:docstring_end_double_regex = '"""\s*$'
 let s:import_start_regex = '^\%(from\|import\)'
 let s:import_cont_regex = 'from.*\((\)[^)]*$\|.*\(\\\)$'
 let s:import_end_paren_regex = ')\s*$'
-let s:import_end_esc_regex = '\%([^\\]\&\S\)$'
+let s:import_end_esc_regex = '[^\\]$'
 
 if exists('SimpylFold_docstring_level')
     let s:docstring_level = SimpylFold_docstring_level
