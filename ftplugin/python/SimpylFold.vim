@@ -4,7 +4,7 @@ endif
 let b:loaded_SimpylFold = 1
 
 let s:blank_regex = '\v^\s*(\#.*)?$'
-if &ft == 'pyrex' || &ft == 'cython'
+if &filetype ==# 'pyrex' || &filetype ==# 'cython'
     let b:def_regex = '\v^\s*%(%(class|%(async\s+)?def|cdef|cpdef|ctypedef)\s+\w+)|cdef\s*:\s*'
 else
     let b:def_regex = '\v^\s*%(class|%(async\s+)?def)\s+\w+|if\s*__name__\s*\=\=\s*%("__main__"|''__main__'')\s*:\s*'
@@ -18,22 +18,22 @@ let s:import_cont_regex = 'from.*\((\)[^)]*$\|.*\(\\\)$'
 let s:import_end_paren_regex = ')\s*$'
 let s:import_end_esc_regex = '[^\\]$'
 
-if exists('SimpylFold_docstring_level')
-    let s:docstring_level = SimpylFold_docstring_level
+if exists('g:SimpylFold_docstring_level')
+    let s:docstring_level = g:SimpylFold_docstring_level
 else
     let s:docstring_level = -1
 end
 
-if exists('SimpylFold_import_level')
-    let s:import_level = SimpylFold_import_level
+if exists('g:SimpylFold_import_level')
+    let s:import_level = g:SimpylFold_import_level
 else
     let s:import_level = -1
 end
 
 function! s:GetLine(lnum)
     let line = getline(a:lnum)
-    if line =~ '^\s*):\s*$'
-        let line = "    " . line
+    if line =~# '^\s*):\s*$'
+        let line = '    ' . line
     endif
     return line
 endfunction
@@ -41,7 +41,7 @@ endfunction
 function! s:GetIndent(lnum)
     let ind = indent(a:lnum)
     let line = getline(a:lnum)
-    if line =~ '^\s*):\s*$'
+    if line =~# '^\s*):\s*$'
         let ind = 4 + ind
     endif
     return ind
@@ -54,7 +54,7 @@ function! s:NextNonBlankOrCommentLine(lnum)
     let nnb = a:lnum + 1
     while nnb > 0
         let nnb = nextnonblank(nnb)
-        if nnb == 0 || s:GetLine(nnb) !~ s:blank_regex
+        if nnb == 0 || s:GetLine(nnb) !~# s:blank_regex
             return nnb
         endif
 
@@ -83,7 +83,7 @@ function! s:NumContainingDefs(lnum)
     " than this line
     let i = a:lnum - 1
     while 1
-        if s:GetLine(i) !~ s:blank_regex
+        if s:GetLine(i) !~# s:blank_regex
             let i_ind = s:GetIndent(i)
             if i_ind < this_ind
                 let ncd = s:NumContainingDefs(i) + (s:GetLine(i) =~# b:def_regex)
@@ -132,7 +132,7 @@ function! SimpylFold(lnum)
     " neighbors' fold levels, but if the next line begins a definition, then
     " this line should fold at one level below the next
     let line = s:GetLine(a:lnum)
-    if line =~ s:blank_regex
+    if line =~# s:blank_regex
         let next_line = s:NextNonBlankOrCommentLine(a:lnum)
         if next_line == 0
             return 0
@@ -153,7 +153,7 @@ function! SimpylFold(lnum)
     if !b:in_docstring &&
         \ (
           \ prev_line =~# b:def_regex ||
-          \ prev_line =~ s:multiline_def_end_regex
+          \ prev_line =~# s:multiline_def_end_regex
         \ ) &&
         \ len(docstring_match)
 
@@ -164,7 +164,7 @@ function! SimpylFold(lnum)
         end
 
         let b:in_docstring = 1
-        if docstring_match[1] == '"""'
+        if docstring_match[1] ==# '"""'
             let b:docstring_end_regex = s:docstring_end_double_regex
         else
             let b:docstring_end_regex = s:docstring_end_single_regex
@@ -176,7 +176,7 @@ function! SimpylFold(lnum)
             let this_fl = s:docstring_level
         end
 
-        if line =~ b:docstring_end_regex
+        if line =~# b:docstring_end_regex
             let b:in_docstring = 0
         endif
     elseif b:in_import == 1
@@ -186,7 +186,7 @@ function! SimpylFold(lnum)
             let this_fl = s:import_level
         end
 
-        if line =~ b:import_end_regex
+        if line =~# b:import_end_regex
             let b:in_import = 0
         endif
     elseif b:in_import == 0 && len(import_match)
@@ -194,9 +194,9 @@ function! SimpylFold(lnum)
 
         let import_cont_match = matchlist(line, s:import_cont_regex)
 
-        if len(import_cont_match) && import_cont_match[1] == '('
+        if len(import_cont_match) && import_cont_match[1] ==# '('
             let b:import_end_regex = s:import_end_paren_regex
-        elseif len(import_cont_match) && import_cont_match[2] == '\'
+        elseif len(import_cont_match) && import_cont_match[2] ==# '\'
             let b:import_end_regex = s:import_end_esc_regex
         else
             let b:in_import = 0
@@ -229,10 +229,10 @@ function! SimpylFoldText()
     let next = nextnonblank(v:foldstart + 1)
     let docstring = s:GetLine(next)
     let ds_prefix = '^\s*\%(\%(["'']\)\{3}\|[''"]\ze[^''"]\)'
-    if docstring =~ ds_prefix
+    if docstring =~# ds_prefix
         let quote_char = docstring[match(docstring, '["'']')]
         let docstring = substitute(docstring, ds_prefix, '', '')
-        if docstring =~ s:blank_regex
+        if docstring =~# s:blank_regex
             let docstring =
                 \ substitute(s:GetLine(nextnonblank(next + 1)), '^\s*', '', '')
         endif
@@ -245,6 +245,6 @@ endfunction
 setlocal foldexpr=SimpylFold(v:lnum)
 setlocal foldmethod=expr
 
-if exists('SimpylFold_docstring_preview') && SimpylFold_docstring_preview
+if exists('g:SimpylFold_docstring_preview') && g:SimpylFold_docstring_preview
     setlocal foldtext=foldtext()\ .\ SimpylFoldText()
 endif
