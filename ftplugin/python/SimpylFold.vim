@@ -29,6 +29,8 @@ if exists('g:SimpylFold_import_level')
 else
     let s:import_level = -1
 end
+let s:fold_docstrings = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
+let s:fold_imports = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
 
 function! s:GetLine(lnum)
     let line = getline(a:lnum)
@@ -50,7 +52,6 @@ endfunction
 " Returns the next non-blank line, checking for our definition of blank using
 " the s:blank_regex variable described above.
 function! s:NextNonBlankOrCommentLine(lnum)
-
     let nnb = a:lnum + 1
     while nnb > 0
         let nnb = nextnonblank(nnb)
@@ -154,8 +155,6 @@ function! SimpylFold(lnum)
         endif
     endif
 
-    let fold_docstrings = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
-    let fold_imports = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     let docstring_match = matchlist(line, s:docstring_start_regex)
     let import_match = matchlist(line, s:import_start_regex)
     let prev_line = s:GetLine(a:lnum - 1)
@@ -166,7 +165,7 @@ function! SimpylFold(lnum)
         endif
 
         if s:docstring_level == -1
-            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_docstrings)
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + s:fold_docstrings)
         else
             return s:FoldExpr(a:lnum, s:docstring_level)
         end
@@ -182,7 +181,7 @@ function! SimpylFold(lnum)
         endif
 
         if s:docstring_level == -1
-            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_docstrings)
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + s:fold_docstrings)
         else
             return s:FoldExpr(a:lnum, s:docstring_level)
         end
@@ -195,7 +194,7 @@ function! SimpylFold(lnum)
         endif
 
         if s:import_level == -1
-            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_imports)
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + s:fold_imports)
         else
             return s:FoldExpr(a:lnum, s:import_level)
         end
@@ -212,7 +211,7 @@ function! SimpylFold(lnum)
         end
 
         if s:import_level == -1
-            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_imports)
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + s:fold_imports)
         else
             return s:FoldExpr(a:lnum, s:import_level)
         end
