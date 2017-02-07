@@ -116,6 +116,17 @@ function! s:NumContainingDefs(lnum)
 
 endfunction
 
+" Construct a foldexpr value
+function! s:FoldExpr(lnum, foldlevel)
+    " If the very next line starts a definition with the same fold level as
+    " this one, explicitly indicate that a fold ends here
+    if s:GetLine(a:lnum + 1) =~# b:def_regex && SimpylFold(a:lnum + 1) == a:foldlevel
+        return '<' . a:foldlevel
+    else
+        return a:foldlevel
+    endif
+endfunction
+
 " Compute fold level for Python code
 function! SimpylFold(lnum)
     " If we are starting a new sweep of the buffer (i.e. the current line
@@ -143,57 +154,55 @@ function! SimpylFold(lnum)
         endif
     endif
 
-    let fold_docstrings =
-        \ !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
-    let fold_imports =
-        \ !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
+    let fold_docstrings = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
+    let fold_imports = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     let docstring_match = matchlist(line, s:docstring_start_regex)
     let import_match = matchlist(line, s:import_start_regex)
     let prev_line = s:GetLine(a:lnum - 1)
-    if !b:in_docstring &&
-        \ (
-          \ prev_line =~# b:def_regex ||
-          \ prev_line =~# s:multiline_def_end_regex
-        \ ) &&
-        \ len(docstring_match)
+
+    if b:in_docstring
+        if line =~# b:docstring_end_regex
+            let b:in_docstring = 0
+        endif
 
         if s:docstring_level == -1
-            let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_docstrings)
         else
-            let this_fl = s:docstring_level
+            return s:FoldExpr(a:lnum, s:docstring_level)
         end
+    endif
 
+    if (prev_line =~# b:def_regex || prev_line =~# s:multiline_def_end_regex) && len(docstring_match)
         let b:in_docstring = 1
+
         if docstring_match[1] ==# '"""'
             let b:docstring_end_regex = s:docstring_end_double_regex
         else
             let b:docstring_end_regex = s:docstring_end_single_regex
         endif
-    elseif b:in_docstring
+
         if s:docstring_level == -1
-            let this_fl = s:NumContainingDefs(a:lnum) + fold_docstrings
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_docstrings)
         else
-            let this_fl = s:docstring_level
+            return s:FoldExpr(a:lnum, s:docstring_level)
         end
 
-        if line =~# b:docstring_end_regex
-            let b:in_docstring = 0
-        endif
-    elseif b:in_import == 1
-        if s:import_level == -1
-            let this_fl = s:NumContainingDefs(a:lnum) + fold_imports
-        else
-            let this_fl = s:import_level
-        end
+    endif
 
+    if b:in_import
         if line =~# b:import_end_regex
             let b:in_import = 0
         endif
-    elseif b:in_import == 0 && len(import_match)
+
+        if s:import_level == -1
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_imports)
+        else
+            return s:FoldExpr(a:lnum, s:import_level)
+        end
+    elseif len(import_match)
         let b:in_import = 1
 
         let import_cont_match = matchlist(line, s:import_cont_regex)
-
         if len(import_cont_match) && import_cont_match[1] ==# '('
             let b:import_end_regex = s:import_end_paren_regex
         elseif len(import_cont_match) && import_cont_match[2] ==# '\'
@@ -203,24 +212,15 @@ function! SimpylFold(lnum)
         end
 
         if s:import_level == -1
-            let this_fl = s:NumContainingDefs(a:lnum) + fold_imports
+            return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + fold_imports)
         else
-            let this_fl = s:import_level
+            return s:FoldExpr(a:lnum, s:import_level)
         end
-    else
-        " Otherwise, its fold level is equal to its number of containing
-        " definitions, plus 1, if this line starts a definition of its own
-        let this_fl = s:NumContainingDefs(a:lnum) + (line =~# b:def_regex)
-
-    endif
-    " If the very next line starts a definition with the same fold level as
-    " this one, explicitly indicate that a fold ends here
-    if s:GetLine(a:lnum + 1) =~# b:def_regex && SimpylFold(a:lnum + 1) == this_fl
-        return '<' . this_fl
-    else
-        return this_fl
     endif
 
+    " Otherwise, its fold level is equal to its number of containing
+    " definitions, plus 1, if this line starts a definition of its own
+    return s:FoldExpr(a:lnum, s:NumContainingDefs(a:lnum) + (line =~# b:def_regex))
 endfunction
 
 " Obtain the first line of the docstring for the folded class or function, if
