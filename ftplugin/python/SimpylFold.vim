@@ -139,11 +139,11 @@ function! SimpylFold(lnum)
         let b:in_import = 0
     endif
     let b:last_folded_line = a:lnum
+    let line = s:GetLine(a:lnum)
 
     " If this line is blank, its fold level is equal to the minimum of its
     " neighbors' fold levels, but if the next line begins a definition, then
     " this line should fold at one level below the next
-    let line = s:GetLine(a:lnum)
     if line =~# s:blank_regex
         let next_line = s:NextNonBlankOrCommentLine(a:lnum)
         if next_line == 0
@@ -154,10 +154,6 @@ function! SimpylFold(lnum)
             return -1
         endif
     endif
-
-    let docstring_match = matchlist(line, s:docstring_start_regex)
-    let import_match = matchlist(line, s:import_start_regex)
-    let prev_line = s:GetLine(a:lnum - 1)
 
     if b:in_docstring
         if line =~# b:docstring_end_regex
@@ -171,7 +167,9 @@ function! SimpylFold(lnum)
         end
     endif
 
-    if (prev_line =~# b:def_regex || prev_line =~# s:multiline_def_end_regex) && len(docstring_match)
+    let docstring_match = matchlist(line, s:docstring_start_regex)
+    let prev_line = s:GetLine(a:lnum - 1)
+    if !empty(docstring_match) && (prev_line =~# b:def_regex || prev_line =~# s:multiline_def_end_regex)
         let b:in_docstring = 1
 
         if docstring_match[1] ==# '"""'
@@ -198,7 +196,7 @@ function! SimpylFold(lnum)
         else
             return s:FoldExpr(a:lnum, s:import_level)
         end
-    elseif len(import_match)
+    elseif match(line, s:import_start_regex) != -1
         let b:in_import = 1
 
         let import_cont_match = matchlist(line, s:import_cont_regex)
