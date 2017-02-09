@@ -29,8 +29,11 @@ if exists('g:SimpylFold_import_level')
 else
     let s:import_level = -1
 end
+
 let s:fold_docstrings = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
+command! -bang SimpylFoldDocstrings let s:fold_docstrings = <bang>1
 let s:fold_imports = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
+command! -bang SimpylFoldImports let s:fold_imports = <bang>1
 
 function! s:GetLine(lnum)
     let line = getline(a:lnum)
