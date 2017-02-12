@@ -9,16 +9,21 @@ let s:import_cont_regex = 'from.*\((\)[^)]*$\|.*\(\\\)$'
 let s:import_end_paren_regex = ')\s*$'
 let s:import_end_esc_regex = '[^\\]$'
 
-function! SimpylFold#SetDefRegex() abort
+" Initialize buffer
+function! SimpylFold#BufferInit() abort
     if &filetype ==# 'pyrex' || &filetype ==# 'cython'
         let b:SimpylFold_def_regex = '\v^\s*%(%(class|%(async\s+)?def|cdef|cpdef|ctypedef)\s+\w+)|cdef\s*:'
     else
         let b:SimpylFold_def_regex = '\v^\s*%(class|%(async\s+)?def)\s+\w+|if\s+__name__\s*\=\=\s*%("__main__"|''__main__'')\s*:'
     endif
-endfunction
 
-let s:fold_docstrings = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
-let s:fold_imports = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
+    if !exists('b:SimpylFold_fold_docstring')
+        let b:SimpylFold_fold_docstring = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
+    endif
+    if !exists('b:SimpylFold_fold_import')
+        let b:SimpylFold_fold_import = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
+    endif
+endfunction
 
 " Calculate indent
 function! s:indent(line) abort
@@ -97,7 +102,7 @@ function! s:cache() abort
         let line = lines[lnum]
 
         " Docstrings
-        if s:fold_docstrings
+        if b:SimpylFold_fold_docstring
             if in_docstring
                 if line =~# docstring_end_regex
                     let in_docstring = 0
@@ -128,7 +133,7 @@ function! s:cache() abort
         endif
 
         " Imports
-        if s:fold_imports
+        if b:SimpylFold_fold_import
             if in_import
                 if line =~# import_end_regex
                     let in_import = 0

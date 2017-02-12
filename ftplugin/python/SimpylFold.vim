@@ -3,7 +3,7 @@ if exists('b:loaded_SimpylFold')
 endif
 let b:loaded_SimpylFold = 1
 
-call SimpylFold#SetDefRegex()
+call SimpylFold#BufferInit()
 setlocal foldexpr=SimpylFold#FoldExpr(v:lnum)
 setlocal foldmethod=expr
 
@@ -14,6 +14,3 @@ augroup END
 if exists('g:SimpylFold_docstring_preview') && g:SimpylFold_docstring_preview
     setlocal foldtext=foldtext()\ .\ SimpylFold#FoldText()
 endif
-
-command! -bang SimpylFoldDocstrings let s:fold_docstrings = <bang>1 | call SimpylFold#Recache()
-command! -bang SimpylFoldImports let s:fold_imports = <bang>1 | call SimpylFold#Recache()
