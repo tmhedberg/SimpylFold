@@ -153,10 +153,8 @@ function! s:cache() abort
                     endif
                 endif
 
-                if in_import
-                    call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 1)
-                    continue
-                endif
+                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                continue
             endif
         endif
 
