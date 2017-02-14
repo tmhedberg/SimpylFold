@@ -38,7 +38,7 @@ endfunction
 
 function! s:defs_stack_prune(cache, defs_stack, ind) abort
     for idx in range(len(a:defs_stack))
-        let ind_stack = a:cache[a:defs_stack[idx]]['indent']
+        let ind_stack = a:cache[(a:defs_stack[idx])]['indent']
         if a:ind == ind_stack
             return a:defs_stack[(idx + 1):]
         elseif a:ind > ind_stack
@@ -48,10 +48,15 @@ function! s:defs_stack_prune(cache, defs_stack, ind) abort
     return []
 endfunction
 
-" Prevent adjacent blanks from merging into previous fold
+" Adjust previous blanks and comments
 function! s:blanks_adj(cache, lnum, defs) abort
     let lnum_prev = a:lnum - 1
-    while lnum_prev != 0 && a:cache[lnum_prev]['is_blank']
+    while lnum_prev != 0 && (
+            \ a:cache[lnum_prev]['is_blank'] || (
+                \ a:cache[lnum_prev]['is_comment'] &&
+                \ a:cache[lnum_prev]['indent'] <= a:cache[(a:lnum)]['indent']
+            \ )
+        \ )
         let a:cache[lnum_prev]['foldexpr'] = a:defs
         let lnum_prev -= 1
     endwhile
@@ -72,22 +77,35 @@ function! s:cache() abort
     for lnum in range(1, lnum_last)
         let line = lines[lnum]
 
-        " Comments
-        if line =~# s:comment_regex
-            call add(cache, {'is_blank': 0, 'is_comment': 1, 'is_def': 0, 'foldexpr': len(defs_stack)})
-            continue
         " Blank lines
-        elseif line =~# s:blank_regex
+        if line =~# s:blank_regex
             call add(cache, {'is_blank': 1, 'is_comment': 0, 'is_def': 0, 'foldexpr': len(defs_stack)})
             continue
         endif
 
-        let is_def = line =~# b:SimpylFold_def_regex
         let ind = s:indent(lines[lnum])
-        call add(cache, {'is_blank': 0, 'is_comment': 0, 'is_def': is_def, 'indent': ind})
+
+        " Comments
+        if line =~# s:comment_regex
+            call add(cache, {'is_blank': 0, 'is_comment': 1, 'is_def': 0, 'indent': ind})
+            let defs = 0
+            let defs_stack_len = len(defs_stack)
+            for idx in range(defs_stack_len)
+                if ind > cache[defs_stack[idx]]['indent']
+                    let defs = defs_stack_len - idx
+                    break
+                endif
+            endfor
+            let cache[lnum]['foldexpr'] = defs
+            call s:blanks_adj(cache, lnum, defs)
+            continue
+        endif
+
+        call add(cache, {'is_blank': 0, 'is_comment': 0,
+            \            'is_def': line =~# b:SimpylFold_def_regex, 'indent': ind})
 
         " Definitions
-        if is_def
+        if cache[lnum]['is_def']
             if empty(defs_stack)
                 let defs_stack = [lnum]
             elseif ind == ind_def
