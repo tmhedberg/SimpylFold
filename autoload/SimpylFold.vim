@@ -45,6 +45,7 @@ function! s:defs_stack_prune(cache, defs_stack, ind) abort
             return a:defs_stack[(idx):]
         endif
     endfor
+    return []
 endfunction
 
 " Prevent adjacent blanks from merging into previous fold
@@ -110,7 +111,11 @@ function! s:cache() abort
                 let ind_def = cache[defs_stack[0]]['indent']
             elseif ind < ind_def
                 let defs_stack = s:defs_stack_prune(cache, defs_stack, ind)
-                let ind_def = cache[defs_stack[0]]['indent']
+                if !empty(defs_stack)
+                    let ind_def = cache[defs_stack[0]]['indent']
+                else
+                    let ind_def = -1
+                endif
             endif
         endif
         let defs = len(defs_stack)
