@@ -1,4 +1,5 @@
-let s:non_blank_regex = '^\s*[^[:space:]#]'
+let s:non_blank_regex = '^\s*[^[:space:]]'
+let s:comment_regex = '^\s*#'
 let s:multiline_def_end_regex = '):$'
 let s:multiline_def_end_solo_regex = '^\s*):$'
 let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
@@ -35,38 +36,6 @@ function! s:indent(line) abort
     return ind
 endfunction
 
-" Determine the number of containing class or function definitions for the
-" given line.
-" This function requires that `lnum` is >= previous `lnum`s.
-function! s:defs(cache, lines, non_blanks, lnum) abort
-    if has_key(a:cache[a:lnum], 'defs')
-        return a:cache[a:lnum]['defs']
-    endif
-
-    " Indent level
-    let ind = s:indent(a:lines[a:lnum])
-    let a:cache[a:lnum]['indent'] = ind  " Cache for use in the loop
-    if ind == 0
-        let a:cache[a:lnum]['defs'] = 0
-        return 0
-    endif
-
-    " Walk backwards to find the previous non-blank line with
-    " a lower indent level than this line
-    let non_blanks_prev = a:non_blanks[:index(a:non_blanks, a:lnum) - 1]
-    for lnum_prev in reverse(copy(non_blanks_prev))
-        if a:cache[lnum_prev]['indent'] < ind
-            let defs = s:defs(a:cache, a:lines, non_blanks_prev, lnum_prev) +
-                \ a:cache[lnum_prev]['is_def']
-            let a:cache[a:lnum]['defs'] = defs
-            return defs
-        endif
-    endfor
-
-    let a:cache[a:lnum]['defs'] = 0
-    return 0
-endfunction
-
 " Construct a foldexpr value and cache it
 function! s:foldexpr(cache_lnum, foldlevel, is_beginning) abort
     let a:cache_lnum['foldlevel'] = a:foldlevel
@@ -77,6 +46,17 @@ function! s:foldexpr(cache_lnum, foldlevel, is_beginning) abort
     endif
 endfunction
 
+function! s:defs_stack_prune(cache, defs_stack, ind) abort
+    for idx in range(len(a:defs_stack))
+        let ind_stack = a:cache[a:defs_stack[idx]]['indent']
+        if a:ind == ind_stack
+            return a:defs_stack[(idx + 1):]
+        elseif a:ind > ind_stack
+            return a:defs_stack[(idx):]
+        endif
+    endfor
+endfunction
+
 " Create a new cache
 function! s:cache() abort
     let cache = [{}]  " With padding for lnum offset
@@ -84,23 +64,55 @@ function! s:cache() abort
     let lnum_last = len(lines)
     call insert(lines, '')  " Padding for lnum offset
 
-    " Cache everything generic that needs to be used later
-    let blanks = []
-    let blanks_pre_non_blank = []
+    " Cache everything generic
     let non_blanks = []
+    let defs_stack = []
+    let ind_def = -1
     for lnum in range(1, lnum_last)
         let line = lines[lnum]
-        if line =~# s:non_blank_regex
-            call add(non_blanks, lnum)
-            call add(cache, {'blank': 0, 'is_def': line =~# b:SimpylFold_def_regex})
-            for lnum_blank in blanks_pre_non_blank
-                let cache[lnum_blank]['next_non_blank'] = lnum
-            endfor
-            let blanks_pre_non_blank = []
+        if line =~# s:comment_regex
+            let defs_stack_len = len(defs_stack)
+            call add(cache, {'is_blank': 0, 'is_comment': 1, 'is_def': 0,
+                \            'defs': defs_stack_len, 'foldexpr': defs_stack_len, 'foldlevel': defs_stack_len})
+        elseif line !~# s:non_blank_regex
+            let defs_stack_len = len(defs_stack)
+            call add(cache, {'is_blank': 1, 'is_comment': 0, 'is_def': 0,
+                \            'defs': defs_stack_len, 'foldexpr': defs_stack_len, 'foldlevel': defs_stack_len})
         else
-            call add(blanks, lnum)
-            call add(blanks_pre_non_blank, lnum)
-            call add(cache, {'blank': 1, 'is_def': 0, 'next_non_blank': -1})
+            call add(non_blanks, lnum)
+            let is_def = line =~# b:SimpylFold_def_regex
+            let ind = s:indent(lines[lnum])
+            call add(cache, {'is_blank': 0, 'is_comment': 0, 'is_def': is_def, 'indent': ind})
+
+            if is_def
+                if empty(defs_stack)
+                    let defs_stack = [lnum]
+                elseif ind > ind_def
+                    call insert(defs_stack, lnum)
+                elseif ind < ind_def
+                    let defs_stack = [lnum] + s:defs_stack_prune(cache, defs_stack, ind)
+                endif
+                let cache[lnum]['defs'] = len(defs_stack) - 1
+                let ind_def = ind
+            else
+                if !empty(defs_stack)
+                    if ind == ind_def
+                        let defs_stack = defs_stack[1:]
+                        let ind_def = cache[defs_stack[0]]['indent']
+                    elseif ind < ind_def
+                        let defs_stack = s:defs_stack_prune(cache, defs_stack, ind)
+                        let ind_def = cache[defs_stack[0]]['indent']
+                    endif
+                endif
+                let cache[lnum]['defs'] = len(defs_stack)
+            endif
+
+            " Prevent adjacent blanks from merging into previous fold
+            let lnum_prev = lnum - 1
+            while lnum_prev != 0 && cache[lnum_prev]['is_blank']
+                call s:foldexpr(cache[lnum_prev], cache[lnum]['defs'], 0)
+                let lnum_prev -= 1
+            endwhile
         endif
     endfor
 
@@ -117,11 +129,11 @@ function! s:cache() abort
                     let in_docstring = 0
                 endif
 
-                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                call s:foldexpr(cache[lnum], cache[lnum]['defs'] + 1, 0)
                 continue
             else
                 let lnum_prev = lnum - 1
-                if !cache[lnum_prev]['blank']
+                if !cache[lnum_prev]['is_blank'] && !cache[lnum_prev]['is_comment']
                     let docstring_match = matchlist(line, s:docstring_start_regex)
                     if !empty(docstring_match) &&
                             \ (cache[lnum_prev]['is_def'] ||
@@ -134,7 +146,7 @@ function! s:cache() abort
                             let docstring_end_regex = s:docstring_end_single_regex
                         endif
 
-                        call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 1)
+                        call s:foldexpr(cache[lnum], cache[lnum]['defs'] + 1, 1)
                         continue
                     endif
                 endif
@@ -148,7 +160,7 @@ function! s:cache() abort
                     let in_import = 0
                 endif
 
-                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                call s:foldexpr(cache[lnum], cache[lnum]['defs'] + 1, 0)
                 continue
             elseif match(line, s:import_start_regex) != -1
                 let import_cont_match = matchlist(line, s:import_cont_regex)
@@ -162,33 +174,14 @@ function! s:cache() abort
                     endif
                 endif
 
-                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                call s:foldexpr(cache[lnum], cache[lnum]['defs'] + 1, 0)
                 continue
             endif
         endif
 
         " Otherwise, its fold level is equal to its number of containing
         " definitions, plus 1, if this line starts a definition of its own
-        call s:foldexpr(
-            \ cache[lnum],
-            \ s:defs(cache, lines, non_blanks, lnum) + cache[lnum]['is_def'],
-            \ cache[lnum]['is_def'],
-        \ )
-    endfor
-
-    " Cache blanks
-    for lnum in blanks
-        " Fold level is equal to the next non-blank's fold level,
-        " except if the next line begins a definition,
-        " then this line should fold at one level below the next.
-        let lnum_next = cache[lnum]['next_non_blank']
-        if lnum_next == -1
-            let cache[lnum]['foldlevel'] = 0
-            let cache[lnum]['foldexpr'] = 0
-        else
-            let cache[lnum]['foldlevel'] = cache[lnum_next]['foldlevel'] - cache[lnum_next]['is_def']
-            let cache[lnum]['foldexpr'] = cache[lnum_next]['foldlevel'] - cache[lnum_next]['is_def']
-        endif
+        call s:foldexpr(cache[lnum], cache[lnum]['defs'] + cache[lnum]['is_def'], cache[lnum]['is_def'])
     endfor
 
     return cache
@@ -199,7 +192,7 @@ function! SimpylFold#FoldExpr(lnum) abort
     if !exists('b:SimpylFold_cache')
         let b:SimpylFold_cache = s:cache()
     endif
-    return b:SimpylFold_cache[a:lnum]['foldexpr']
+    return b:SimpylFold_cache[(a:lnum)]['foldexpr']
 endfunction
 
 " Recache the buffer
