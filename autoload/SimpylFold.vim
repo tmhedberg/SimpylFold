@@ -69,6 +69,7 @@ endfunction
 
 " Construct a foldexpr value and cache it
 function! s:foldexpr(cache_lnum, foldlevel, is_beginning) abort
+    let a:cache_lnum['foldlevel'] = a:foldlevel
     if a:is_beginning
         let a:cache_lnum['foldexpr'] = '>' . a:foldlevel
     else
@@ -84,14 +85,22 @@ function! s:cache() abort
     call insert(lines, '')  " Padding for lnum offset
 
     " Cache everything generic that needs to be used later
+    let blanks = []
+    let blanks_pre_non_blank = []
     let non_blanks = []
     for lnum in range(1, lnum_last)
         let line = lines[lnum]
         if line =~# s:non_blank_regex
             call add(non_blanks, lnum)
             call add(cache, {'blank': 0, 'is_def': line =~# b:SimpylFold_def_regex})
+            for lnum_blank in blanks_pre_non_blank
+                let cache[lnum_blank]['next_non_blank'] = lnum
+            endfor
+            let blanks_pre_non_blank = []
         else
-            call add(cache, {'blank': 1, 'is_def': 0, 'foldexpr': -1})
+            call add(blanks, lnum)
+            call add(blanks_pre_non_blank, lnum)
+            call add(cache, {'blank': 1, 'is_def': 0, 'next_non_blank': -1})
         endif
     endfor
 
@@ -165,6 +174,21 @@ function! s:cache() abort
             \ s:defs(cache, lines, non_blanks, lnum) + cache[lnum]['is_def'],
             \ cache[lnum]['is_def'],
         \ )
+    endfor
+
+    " Cache blanks
+    for lnum in blanks
+        " Fold level is equal to the next non-blank's fold level,
+        " except if the next line begins a definition,
+        " then this line should fold at one level below the next.
+        let lnum_next = cache[lnum]['next_non_blank']
+        if lnum_next == -1
+            let cache[lnum]['foldlevel'] = 0
+            let cache[lnum]['foldexpr'] = 0
+        else
+            let cache[lnum]['foldlevel'] = cache[lnum_next]['foldlevel'] - cache[lnum_next]['is_def']
+            let cache[lnum]['foldexpr'] = cache[lnum_next]['foldlevel'] - cache[lnum_next]['is_def']
+        endif
     endfor
 
     return cache
