@@ -1,4 +1,5 @@
-let s:non_blank_regex = '^\s*[^[:space:]#]'
+let s:blank_regex = '^\s*$'
+let s:comment_regex = '^\s*#'
 let s:multiline_def_end_regex = '):$'
 let s:multiline_def_end_solo_regex = '^\s*):$'
 let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
@@ -35,46 +36,30 @@ function! s:indent(line) abort
     return ind
 endfunction
 
-" Determine the number of containing class or function definitions for the
-" given line.
-" This function requires that `lnum` is >= previous `lnum`s.
-function! s:defs(cache, lines, non_blanks, lnum) abort
-    if has_key(a:cache[a:lnum], 'defs')
-        return a:cache[a:lnum]['defs']
-    endif
-
-    " Indent level
-    let ind = s:indent(a:lines[a:lnum])
-    let a:cache[a:lnum]['indent'] = ind  " Cache for use in the loop
-    if ind == 0
-        let a:cache[a:lnum]['defs'] = 0
-        return 0
-    endif
-
-    " Walk backwards to find the previous non-blank line with
-    " a lower indent level than this line
-    let non_blanks_prev = a:non_blanks[:index(a:non_blanks, a:lnum) - 1]
-    for lnum_prev in reverse(copy(non_blanks_prev))
-        if a:cache[lnum_prev]['indent'] < ind
-            let defs = s:defs(a:cache, a:lines, non_blanks_prev, lnum_prev) +
-                \ a:cache[lnum_prev]['is_def']
-            let a:cache[a:lnum]['defs'] = defs
-            return defs
+function! s:defs_stack_prune(cache, defs_stack, ind) abort
+    for idx in range(len(a:defs_stack))
+        let ind_stack = a:cache[(a:defs_stack[idx])]['indent']
+        if a:ind == ind_stack
+            return a:defs_stack[(idx + 1):]
+        elseif a:ind > ind_stack
+            return a:defs_stack[(idx):]
         endif
     endfor
-
-    let a:cache[a:lnum]['defs'] = 0
-    return 0
+    return []
 endfunction
 
-" Construct a foldexpr value and cache it
-function! s:foldexpr(cache_lnum, foldlevel, is_beginning) abort
-    let a:cache_lnum['foldlevel'] = a:foldlevel
-    if a:is_beginning
-        let a:cache_lnum['foldexpr'] = '>' . a:foldlevel
-    else
-        let a:cache_lnum['foldexpr'] = a:foldlevel
-    endif
+" Adjust previous blanks and comments
+function! s:blanks_adj(cache, lnum, defs) abort
+    let lnum_prev = a:lnum - 1
+    while lnum_prev != 0 && (
+            \ a:cache[lnum_prev]['is_blank'] || (
+                \ a:cache[lnum_prev]['is_comment'] &&
+                \ a:cache[lnum_prev]['indent'] <= a:cache[(a:lnum)]['indent']
+            \ )
+        \ )
+        let a:cache[lnum_prev]['foldexpr'] = a:defs
+        let lnum_prev -= 1
+    endwhile
 endfunction
 
 " Create a new cache
@@ -84,31 +69,74 @@ function! s:cache() abort
     let lnum_last = len(lines)
     call insert(lines, '')  " Padding for lnum offset
 
-    " Cache everything generic that needs to be used later
-    let blanks = []
-    let blanks_pre_non_blank = []
-    let non_blanks = []
-    for lnum in range(1, lnum_last)
-        let line = lines[lnum]
-        if line =~# s:non_blank_regex
-            call add(non_blanks, lnum)
-            call add(cache, {'blank': 0, 'is_def': line =~# b:SimpylFold_def_regex})
-            for lnum_blank in blanks_pre_non_blank
-                let cache[lnum_blank]['next_non_blank'] = lnum
-            endfor
-            let blanks_pre_non_blank = []
-        else
-            call add(blanks, lnum)
-            call add(blanks_pre_non_blank, lnum)
-            call add(cache, {'blank': 1, 'is_def': 0, 'next_non_blank': -1})
-        endif
-    endfor
-
-    " Cache non-blanks
+    let defs_stack = []
+    let ind_def = -1
     let in_docstring = 0
     let in_import = 0
-    for lnum in non_blanks
+    let was_import = 0
+    for lnum in range(1, lnum_last)
         let line = lines[lnum]
+
+        " Blank lines
+        if line =~# s:blank_regex
+            call add(cache, {'is_blank': 1, 'is_comment': 0, 'is_def': 0, 'foldexpr': len(defs_stack)})
+            continue
+        endif
+
+        let ind = s:indent(lines[lnum])
+
+        " Comments
+        if line =~# s:comment_regex
+            call add(cache, {'is_blank': 0, 'is_comment': 1, 'is_def': 0, 'indent': ind})
+            let defs = 0
+            let defs_stack_len = len(defs_stack)
+            for idx in range(defs_stack_len)
+                if ind > cache[defs_stack[idx]]['indent']
+                    let defs = defs_stack_len - idx
+                    break
+                endif
+            endfor
+            let cache[lnum]['foldexpr'] = defs
+            call s:blanks_adj(cache, lnum, defs)
+            continue
+        endif
+
+        call add(cache, {'is_blank': 0, 'is_comment': 0,
+            \            'is_def': line =~# b:SimpylFold_def_regex, 'indent': ind})
+
+        " Definitions
+        if cache[lnum]['is_def']
+            if empty(defs_stack)
+                let defs_stack = [lnum]
+            elseif ind == ind_def
+                let defs_stack[0] = lnum
+            elseif ind > ind_def
+                call insert(defs_stack, lnum)
+            elseif ind < ind_def
+                let defs_stack = [lnum] + s:defs_stack_prune(cache, defs_stack, ind)
+            endif
+            let defs = len(defs_stack) - 1
+            let ind_def = ind
+            call s:blanks_adj(cache, lnum, defs)
+            let cache[lnum]['foldexpr'] = '>' . (defs + 1)
+            continue
+        endif
+
+        " Everything else
+        if !empty(defs_stack)
+            if ind == ind_def
+                let defs_stack = defs_stack[1:]
+                let ind_def = cache[defs_stack[0]]['indent']
+            elseif ind < ind_def
+                let defs_stack = s:defs_stack_prune(cache, defs_stack, ind)
+                if !empty(defs_stack)
+                    let ind_def = cache[defs_stack[0]]['indent']
+                else
+                    let ind_def = -1
+                endif
+            endif
+        endif
+        let defs = len(defs_stack)
 
         " Docstrings
         if b:SimpylFold_fold_docstring
@@ -117,11 +145,12 @@ function! s:cache() abort
                     let in_docstring = 0
                 endif
 
-                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                call s:blanks_adj(cache, lnum, defs + 1)
+                let cache[lnum]['foldexpr'] = defs + 1
                 continue
             else
                 let lnum_prev = lnum - 1
-                if !cache[lnum_prev]['blank']
+                if !cache[lnum_prev]['is_blank'] && !cache[lnum_prev]['is_comment']
                     let docstring_match = matchlist(line, s:docstring_start_regex)
                     if !empty(docstring_match) &&
                             \ (cache[lnum_prev]['is_def'] ||
@@ -134,7 +163,7 @@ function! s:cache() abort
                             let docstring_end_regex = s:docstring_end_single_regex
                         endif
 
-                        call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 1)
+                        let cache[lnum]['foldexpr'] = '>' . (defs + 1)
                         continue
                     endif
                 endif
@@ -148,7 +177,8 @@ function! s:cache() abort
                     let in_import = 0
                 endif
 
-                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                call s:blanks_adj(cache, lnum, defs + 1)
+                let cache[lnum]['foldexpr'] = defs + 1
                 continue
             elseif match(line, s:import_start_regex) != -1
                 let import_cont_match = matchlist(line, s:import_cont_regex)
@@ -162,33 +192,22 @@ function! s:cache() abort
                     endif
                 endif
 
-                call s:foldexpr(cache[lnum], s:defs(cache, lines, non_blanks, lnum) + 1, 0)
+                if was_import
+                    call s:blanks_adj(cache, lnum, defs + 1)
+                    let cache[lnum]['foldexpr'] = defs + 1
+                else
+                    let cache[lnum]['foldexpr'] = '>' . (defs + 1)
+                endif
+                let was_import = 1
                 continue
+            else
+                let was_import = 0
             endif
         endif
 
-        " Otherwise, its fold level is equal to its number of containing
-        " definitions, plus 1, if this line starts a definition of its own
-        call s:foldexpr(
-            \ cache[lnum],
-            \ s:defs(cache, lines, non_blanks, lnum) + cache[lnum]['is_def'],
-            \ cache[lnum]['is_def'],
-        \ )
-    endfor
-
-    " Cache blanks
-    for lnum in blanks
-        " Fold level is equal to the next non-blank's fold level,
-        " except if the next line begins a definition,
-        " then this line should fold at one level below the next.
-        let lnum_next = cache[lnum]['next_non_blank']
-        if lnum_next == -1
-            let cache[lnum]['foldlevel'] = 0
-            let cache[lnum]['foldexpr'] = 0
-        else
-            let cache[lnum]['foldlevel'] = cache[lnum_next]['foldlevel'] - cache[lnum_next]['is_def']
-            let cache[lnum]['foldexpr'] = cache[lnum_next]['foldlevel'] - cache[lnum_next]['is_def']
-        endif
+        " Otherwise, its fold level is equal to its number of parent definitions
+        call s:blanks_adj(cache, lnum, defs)
+        let cache[lnum]['foldexpr'] = defs
     endfor
 
     return cache
@@ -199,7 +218,7 @@ function! SimpylFold#FoldExpr(lnum) abort
     if !exists('b:SimpylFold_cache')
         let b:SimpylFold_cache = s:cache()
     endif
-    return b:SimpylFold_cache[a:lnum]['foldexpr']
+    return b:SimpylFold_cache[(a:lnum)]['foldexpr']
 endfunction
 
 " Recache the buffer
@@ -218,9 +237,8 @@ function! SimpylFold#FoldText() abort
     if docstring =~# ds_prefix
         let quote_char = docstring[match(docstring, '["'']')]
         let docstring = substitute(docstring, ds_prefix, '', '')
-        if docstring !~# s:non_blank_regex
-            let docstring =
-                \ substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
+        if docstring =~# s:blank_regex
+            let docstring = substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
         endif
         let docstring = substitute(docstring, quote_char . '\{,3}$', '', '')
         return ' ' . docstring
