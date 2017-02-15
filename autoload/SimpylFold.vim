@@ -2,6 +2,7 @@ let s:blank_regex = '^\s*$'
 let s:comment_regex = '^\s*#'
 let s:multiline_def_end_regex = '):$'
 let s:multiline_def_end_solo_regex = '^\s*):$'
+let s:docstring_prefix_regex = '^\s*[rR]\?\%("""\|''''''\|"\ze[^"]\|''\ze[^'']\)'
 let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
 let s:docstring_end_single_regex = '''''''\s*$'
 let s:docstring_end_double_regex = '"""\s*$'
@@ -233,10 +234,9 @@ endfunction
 function! SimpylFold#FoldText() abort
     let next = nextnonblank(v:foldstart + 1)
     let docstring = getline(next)
-    let ds_prefix = '^\s*\%(\%(["'']\)\{3}\|[''"]\ze[^''"]\)'
-    if docstring =~# ds_prefix
+    if docstring =~# s:docstring_prefix_regex
         let quote_char = docstring[match(docstring, '["'']')]
-        let docstring = substitute(docstring, ds_prefix, '', '')
+        let docstring = substitute(docstring, s:docstring_prefix_regex, '', '')
         if docstring =~# s:blank_regex
             let docstring = substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
         endif
