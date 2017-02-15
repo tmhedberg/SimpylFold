@@ -1,7 +1,7 @@
 let s:blank_regex = '^\s*$'
 let s:comment_regex = '^\s*#'
-let s:multiline_def_end_regex = '):$'
-let s:multiline_def_end_solo_regex = '^\s*):$'
+let s:multi_def_end_regex = '):$'
+let s:multi_def_end_solo_regex = '^\s*):$'
 let s:string_prefix_regex = '^\s*[uUrR]\?\("""\|''''''\|"\|''\)'
 let s:multi_string_start_regex = '^\([^''"]*\)[uUrR]\?\("""\|''''''\)\%(.*\2\s*$\)\@!'
 let s:multi_string_end_single_regex = ''''''''
@@ -31,7 +31,7 @@ endfunction
 function! s:indent(line) abort
     let ind = matchend(a:line, '^ *') / &softtabstop
     " Fix indent for solo def multiline endings
-    if a:line =~# s:multiline_def_end_solo_regex
+    if a:line =~# s:multi_def_end_solo_regex
         return ind + 1
     endif
     return ind
@@ -160,7 +160,7 @@ function! s:cache() abort
             " Docstrings
             if b:SimpylFold_fold_docstring && string_match[1] =~# s:blank_regex
                 if !cache[-2]['is_blank'] && !cache[-2]['is_comment'] && (
-                        \ cache[-2]['is_def'] || lines[-2] =~# s:multiline_def_end_regex)
+                        \ cache[-2]['is_def'] || lines[-2] =~# s:multi_def_end_regex)
                     let in_docstring = 1
                     let cache[lnum]['foldexpr'] = '>' . (defs + 1)
                     continue
