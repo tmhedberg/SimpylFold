@@ -2,10 +2,10 @@ let s:blank_regex = '^\s*$'
 let s:comment_regex = '^\s*#'
 let s:multiline_def_end_regex = '):$'
 let s:multiline_def_end_solo_regex = '^\s*):$'
-let s:docstring_prefix_regex = '^\s*[rR]\?\%("""\|''''''\|"\ze[^"]\|''\ze[^'']\)'
-let s:docstring_start_regex = '^\s*[rR]\?\("""\|''''''\)\%(.*\1\s*$\)\@!'
-let s:docstring_end_single_regex = '''''''\s*$'
-let s:docstring_end_double_regex = '"""\s*$'
+let s:string_prefix_regex = '^\s*[uUrR]\?\("""\|''''''\|"\|''\)'
+let s:multi_string_start_regex = '^\([^''"]*\)[uUrR]\?\("""\|''''''\)\%(.*\2\s*$\)\@!'
+let s:multi_string_end_single_regex = ''''''''
+let s:multi_string_end_double_regex = '"""'
 let s:import_start_regex = '^\%(from\|import\)'
 let s:import_cont_regex = 'from.*\((\)[^)]*$\|.*\(\\\)$'
 let s:import_end_paren_regex = ')\s*$'
@@ -72,15 +72,27 @@ function! s:cache() abort
 
     let defs_stack = []
     let ind_def = -1
+    let in_string = 0
     let in_docstring = 0
     let in_import = 0
     let was_import = 0
     for lnum in range(1, lnum_last)
         let line = lines[lnum]
 
+        " Multiline strings
+        if in_string
+            call add(cache, {'is_blank': 0, 'is_comment': 0, 'foldexpr': (len(defs_stack) + in_docstring)})
+            " Only match lines with odd number of endings
+            if (len(split(line, string_end_regex, 1)) - 1) % 2
+                let in_string = 0
+                let in_docstring = 0
+            endif
+            continue
+        endif
+
         " Blank lines
         if line =~# s:blank_regex
-            call add(cache, {'is_blank': 1, 'is_comment': 0, 'is_def': 0, 'foldexpr': len(defs_stack)})
+            call add(cache, {'is_blank': 1, 'is_comment': 0, 'foldexpr': len(defs_stack)})
             continue
         endif
 
@@ -88,7 +100,7 @@ function! s:cache() abort
 
         " Comments
         if line =~# s:comment_regex
-            call add(cache, {'is_blank': 0, 'is_comment': 1, 'is_def': 0, 'indent': ind})
+            call add(cache, {'is_blank': 0, 'is_comment': 1, 'indent': ind})
             let defs = 0
             let defs_stack_len = len(defs_stack)
             for idx in range(defs_stack_len)
@@ -139,36 +151,24 @@ function! s:cache() abort
         endif
         let defs = len(defs_stack)
 
-        " Docstrings
-        if b:SimpylFold_fold_docstring
-            if in_docstring
-                if line =~# docstring_end_regex
-                    let in_docstring = 0
-                endif
+        " Multiline strings start
+        let string_match = matchlist(line, s:multi_string_start_regex)
+        if !empty(string_match)
+            let in_string = 1
+            let string_end_regex = string_match[2]
 
-                call s:blanks_adj(cache, lnum, defs + 1)
-                let cache[lnum]['foldexpr'] = defs + 1
-                continue
-            else
-                let lnum_prev = lnum - 1
-                if !cache[lnum_prev]['is_blank'] && !cache[lnum_prev]['is_comment']
-                    let docstring_match = matchlist(line, s:docstring_start_regex)
-                    if !empty(docstring_match) &&
-                            \ (cache[lnum_prev]['is_def'] ||
-                            \  lines[lnum_prev] =~# s:multiline_def_end_regex)
-                        let in_docstring = 1
-
-                        if docstring_match[1] ==# '"""'
-                            let docstring_end_regex = s:docstring_end_double_regex
-                        else
-                            let docstring_end_regex = s:docstring_end_single_regex
-                        endif
-
-                        let cache[lnum]['foldexpr'] = '>' . (defs + 1)
-                        continue
-                    endif
+            " Docstrings
+            if b:SimpylFold_fold_docstring && string_match[1] =~# s:blank_regex
+                if !cache[-2]['is_blank'] && !cache[-2]['is_comment'] && (
+                        \ cache[-2]['is_def'] || lines[-2] =~# s:multiline_def_end_regex)
+                    let in_docstring = 1
+                    let cache[lnum]['foldexpr'] = '>' . (defs + 1)
+                    continue
                 endif
             endif
+
+            let cache[lnum]['foldexpr'] = defs
+            continue
         endif
 
         " Imports
@@ -232,15 +232,15 @@ endfunction
 " Compute foldtext by obtaining the first line of the docstring for
 " the folded class or function, if any exists
 function! SimpylFold#FoldText() abort
-    let next = nextnonblank(v:foldstart + 1)
-    let docstring = getline(next)
-    if docstring =~# s:docstring_prefix_regex
-        let quote_char = docstring[match(docstring, '["'']')]
-        let docstring = substitute(docstring, s:docstring_prefix_regex, '', '')
+    let lnum_next = nextnonblank(v:foldstart + 1)
+    let docstring = getline(lnum_next)
+    let string_match = matchlist(docstring, s:string_prefix_regex)
+    if !empty(string_match)
+        let docstring = substitute(docstring, s:string_prefix_regex, '', '')
         if docstring =~# s:blank_regex
-            let docstring = substitute(getline(nextnonblank(next + 1)), '^\s*', '', '')
+            let docstring = substitute(getline(nextnonblank(lnum_next + 1)), '^\s*', '', '')
         endif
-        let docstring = substitute(docstring, quote_char . '\{,3}$', '', '')
+        let docstring = substitute(docstring, string_match[1] . '$', '', '')
         return ' ' . docstring
     endif
     return ''
