@@ -63,6 +63,18 @@ function! s:blanks_adj(cache, lnum, defs) abort
     endwhile
 endfunction
 
+" Check if previous lines are blanks or comments
+function! s:are_lines_prev_blank(cache, lnum) abort
+    let lnum_prev = a:lnum - 1
+    while lnum_prev != 0
+        if !a:cache[lnum_prev]['is_blank'] && !a:cache[lnum_prev]['is_comment']
+            return 0
+        endif
+        let lnum_prev -= 1
+    endwhile
+    return 1
+endfunction
+
 " Create a new cache
 function! s:cache() abort
     let cache = [{}]  " With padding for lnum offset
@@ -159,8 +171,13 @@ function! s:cache() abort
 
             " Docstrings
             if b:SimpylFold_fold_docstring && string_match[1] =~# s:blank_regex
-                if !cache[-2]['is_blank'] && !cache[-2]['is_comment'] && (
-                        \ cache[-2]['is_def'] || lines[-2] =~# s:multi_def_end_regex)
+                let lnum_prev = lnum - 1
+                if lnum == 1 || s:are_lines_prev_blank(cache, lnum) || (
+                        \ !cache[lnum_prev]['is_blank'] && !cache[lnum_prev]['is_comment'] && (
+                            \ cache[lnum_prev]['is_def'] ||
+                            \ lines[lnum_prev] =~# s:multi_def_end_regex
+                        \ )
+                    \ )
                     let in_docstring = 1
                     let cache[lnum]['foldexpr'] = '>' . (defs + 1)
                     continue
