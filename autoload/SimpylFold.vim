@@ -4,8 +4,6 @@ let s:multi_def_end_regex = '):$'
 let s:multi_def_end_solo_regex = '^\s*):$'
 let s:string_prefix_regex = '^\s*[bBfFrRuU]\{0,2}\("""\|''''''\|"\|''\)'
 let s:multi_string_start_regex = '^\([^''"]\{-}\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\2\s*$\)\@!'
-let s:multi_string_end_single_regex = ''''''''
-let s:multi_string_end_double_regex = '"""'
 let s:import_start_regex = '^\s*\%(from\|import\)'
 let s:import_cont_regex = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
 let s:import_end_paren_regex = ')\s*$'
@@ -96,7 +94,7 @@ function! s:cache() abort
             continue
         endif
 
-        let ind = s:indent(lines[lnum])
+        let ind = s:indent(line)
 
         " Comments
         if line =~# s:comment_regex
