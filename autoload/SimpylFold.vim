@@ -247,16 +247,28 @@ endfunction
 " Compute foldtext by obtaining the first line of the docstring for
 " the folded class or function, if any exists
 function! SimpylFold#FoldText() abort
-    let lnum_next = nextnonblank(v:foldstart + 1)
-    let docstring = getline(lnum_next)
-    let string_match = matchlist(docstring, s:string_prefix_regex)
+    let lnum = v:foldstart
+    let line = getline(lnum)
+    let string_match = matchlist(line, s:string_prefix_regex)
+    " Docstring folds
     if !empty(string_match)
-        let docstring = substitute(docstring, s:string_prefix_regex, '', '')
-        if docstring =~# s:blank_regex
-            let docstring = substitute(getline(nextnonblank(lnum_next + 1)), '^\s*', '', '')
+        let docstring = substitute(line, s:string_prefix_regex, '', '')
+        if docstring !~# s:blank_regex
+            return ''
         endif
-        let docstring = substitute(docstring, string_match[1] . '$', '', '')
-        return ' ' . docstring
+        let docstring = getline(nextnonblank(lnum + 1))
+    " Definition folds
+    else
+        let lnum = nextnonblank(lnum + 1)
+        let line = getline(lnum)
+        let string_match = matchlist(line, s:string_prefix_regex)
+        if empty(string_match)
+            return ''
+        endif
+        let docstring = substitute(line, s:string_prefix_regex, '', '')
+        if docstring =~# s:blank_regex
+            let docstring = getline(nextnonblank(lnum + 1))
+        endif
     endif
-    return ''
+    return ' ' . substitute(docstring, '^\s*\|\s*$\|' . string_match[1] . '\s*$', '', 'g')
 endfunction
