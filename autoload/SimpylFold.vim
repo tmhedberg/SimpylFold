@@ -28,6 +28,9 @@ endfunction
 " Calculate indent
 function! s:indent(line) abort
     let ind = matchend(a:line, '^ *') / &softtabstop
+    if ind == 0
+        let ind = matchend(a:line, '^\t*')
+    endif
     " Fix indent for solo def multiline endings
     if a:line =~# s:multi_def_end_solo_regex
         return ind + 1
