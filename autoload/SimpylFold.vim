@@ -241,7 +241,7 @@ function! SimpylFold#FoldText() abort
         if docstring !~# s:blank_regex
             return ''
         endif
-        let docstring = substitute(getline(nextnonblank(lnum + 1)), '^\s*', '', '')
+        let docstring = getline(nextnonblank(lnum + 1))
     " Definition folds
     else
         let lnum = nextnonblank(lnum + 1)
@@ -252,9 +252,8 @@ function! SimpylFold#FoldText() abort
         endif
         let docstring = substitute(line, s:string_prefix_regex, '', '')
         if docstring =~# s:blank_regex
-            let docstring = substitute(getline(nextnonblank(lnum + 1)), '^\s*', '', '')
+            let docstring = getline(nextnonblank(lnum + 1))
         endif
     endif
-    let docstring = substitute(docstring, string_match[1] . '$', '', '')
-    return ' ' . docstring
+    return ' ' . substitute(docstring, '^\s*\|\s*$\|' . string_match[1] . '\s*$', '', 'g')
 endfunction
