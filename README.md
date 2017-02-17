@@ -33,14 +33,10 @@ Configuration
 
 No configuration is necessary. However, there are a few configurable options.
 
-Enable option with:
-```vim
-let VARIABLE = 1
-```
-Disable option with:
-```vim
-let VARIABLE = 0
-```
+### Option variables
+
+Set variable to `1` to enable or `0` to disable.
+
 For example to enable docstring preview in fold text you can add the
 following command to your `~/.config/nvim/init.vim` or `~/.vimrc`:
 ```vim
@@ -53,6 +49,8 @@ let g:SimpylFold_docstring_preview = 1
 | `b:SimpylFold_fold_docstring`    | Fold docstrings (buffer local) | `1`     |
 | `g:SimpylFold_fold_import`       | Fold imports                   | `1`     |
 | `b:SimpylFold_fold_import`       | Fold imports (buffer local)    | `1`     |
+
+### Commands
 
 There are also a few buffer local commands for fast toggling:
 

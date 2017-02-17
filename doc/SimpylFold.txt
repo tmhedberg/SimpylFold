@@ -23,18 +23,18 @@ your head over (because there's only one that's correct); it just works, simply.
 
 
 ===============================================================================
-Configuration                                                 *SimpylFold-config*
+Configuration                                          *SimpylFold-configuration*
 
 No configuration is necessary. However, there are a few configurable options.
 
-Enable option with: >
-    let VARIABLE = 1
-<
-Disable option with: >
-    let VARIABLE = 0
-<
+Option variables
+----------------
+
+Set variable to `1` to enable or `0` to disable.
+
 For example to enable docstring preview in fold text you can add the
 following command to your `~/.config/nvim/init.vim` or `~/.vimrc`: >
+
     let g:SimpylFold_docstring_preview = 1
 <
 | Variable                        | Description                    | Default |
@@ -44,6 +44,9 @@ following command to your `~/.config/nvim/init.vim` or `~/.vimrc`: >
 | `b:SimpylFold_fold_docstring`     | Fold docstrings (buffer local) | `1`       |
 | `g:SimpylFold_fold_import`        | Fold imports                   | `1`       |
 | `b:SimpylFold_fold_import`        | Fold imports (buffer local)    | `1`       |
+
+Commands
+--------
 
 There are also a few buffer local commands for fast toggling:
 
@@ -55,9 +58,9 @@ There are also a few buffer local commands for fast toggling:
 | `SimpylFoldImports!`      | Disable import folding    |
 
 
-Usage
 ===============================================================================
-                                                               *SimpylFold-usage*
+Usage                                                          *SimpylFold-usage*
+
 Use Vim's built-in folding commands to expand and collapse folds.
 The most basic commands are `zc` to close a fold and `zo` to open one.
 See `:help fold-commands` for full documentation.
