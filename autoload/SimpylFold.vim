@@ -99,7 +99,7 @@ function! s:cache() abort
         " Multiline strings
         if in_string
             call add(cache, {'is_blank': 0, 'is_comment': 0,
-                        \    'foldexpr': (len(defs_stack) + in_docstring)})
+                \            'foldexpr': (len(defs_stack) + in_docstring)})
             " Only match lines with odd number of endings
             if (len(split(line, string_end_regex, 1)) - 1) % 2
                 let in_string = 0
