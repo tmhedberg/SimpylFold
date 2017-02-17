@@ -55,7 +55,7 @@ function! s:defs_stack_prune(cache, defs_stack, ind) abort
 endfunction
 
 " Adjust previous blanks and comments
-function! s:blanks_adj(cache, lnum, defs) abort
+function! s:blanks_adj(cache, lnum, foldlevel) abort
     let lnum_prev = a:lnum - 1
     while lnum_prev != 0 && (
             \ a:cache[lnum_prev]['is_blank'] || (
@@ -63,7 +63,7 @@ function! s:blanks_adj(cache, lnum, defs) abort
                 \ a:cache[lnum_prev]['indent'] <= a:cache[(a:lnum)]['indent']
             \ )
         \ )
-        let a:cache[lnum_prev]['foldexpr'] = a:defs
+        let a:cache[lnum_prev]['foldexpr'] = a:foldlevel
         let lnum_prev -= 1
     endwhile
 endfunction
@@ -119,16 +119,16 @@ function! s:cache() abort
         " Comments
         if line =~# s:comment_regex
             call add(cache, {'is_blank': 0, 'is_comment': 1, 'indent': ind})
-            let defs = 0
+            let foldlevel = 0
             let defs_stack_len = len(defs_stack)
             for idx in range(defs_stack_len)
                 if ind > cache[defs_stack[idx]]['indent']
-                    let defs = defs_stack_len - idx
+                    let foldlevel = defs_stack_len - idx
                     break
                 endif
             endfor
-            let cache[lnum]['foldexpr'] = defs
-            call s:blanks_adj(cache, lnum, defs)
+            let cache[lnum]['foldexpr'] = foldlevel
+            call s:blanks_adj(cache, lnum, foldlevel)
             continue
         endif
 
@@ -146,10 +146,10 @@ function! s:cache() abort
             elseif ind < ind_def
                 let defs_stack = [lnum] + s:defs_stack_prune(cache, defs_stack, ind)
             endif
-            let defs = len(defs_stack) - 1
+            let foldlevel = len(defs_stack) - 1
             let ind_def = ind
-            call s:blanks_adj(cache, lnum, defs)
-            let cache[lnum]['foldexpr'] = '>' . (defs + 1)
+            call s:blanks_adj(cache, lnum, foldlevel)
+            let cache[lnum]['foldexpr'] = '>' . (foldlevel + 1)
             continue
         endif
 
@@ -167,7 +167,7 @@ function! s:cache() abort
                 endif
             endif
         endif
-        let defs = len(defs_stack)
+        let foldlevel = len(defs_stack)
 
         " Multiline strings start
         let string_match = matchlist(line, s:multi_string_start_regex)
@@ -185,12 +185,12 @@ function! s:cache() abort
                         \ )
                     \ )
                     let in_docstring = 1
-                    let cache[lnum]['foldexpr'] = '>' . (defs + 1)
+                    let cache[lnum]['foldexpr'] = '>' . (foldlevel + 1)
                     continue
                 endif
             endif
 
-            let cache[lnum]['foldexpr'] = defs
+            let cache[lnum]['foldexpr'] = foldlevel
             continue
         endif
 
@@ -201,8 +201,8 @@ function! s:cache() abort
                     let in_import = 0
                 endif
 
-                call s:blanks_adj(cache, lnum, defs + 1)
-                let cache[lnum]['foldexpr'] = defs + 1
+                call s:blanks_adj(cache, lnum, foldlevel + 1)
+                let cache[lnum]['foldexpr'] = foldlevel + 1
                 continue
             elseif match(line, s:import_start_regex) != -1
                 let import_cont_match = matchlist(line, s:import_cont_regex)
@@ -217,10 +217,10 @@ function! s:cache() abort
                 endif
 
                 if was_import
-                    call s:blanks_adj(cache, lnum, defs + 1)
-                    let cache[lnum]['foldexpr'] = defs + 1
+                    call s:blanks_adj(cache, lnum, foldlevel + 1)
+                    let cache[lnum]['foldexpr'] = foldlevel + 1
                 else
-                    let cache[lnum]['foldexpr'] = '>' . (defs + 1)
+                    let cache[lnum]['foldexpr'] = '>' . (foldlevel + 1)
                 endif
                 let was_import = 1
                 continue
@@ -229,9 +229,9 @@ function! s:cache() abort
             endif
         endif
 
-        " Otherwise, its fold level is equal to its number of parent definitions
-        call s:blanks_adj(cache, lnum, defs)
-        let cache[lnum]['foldexpr'] = defs
+        " Normal
+        call s:blanks_adj(cache, lnum, foldlevel)
+        let cache[lnum]['foldexpr'] = foldlevel
     endfor
 
     return cache
