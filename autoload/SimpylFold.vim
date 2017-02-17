@@ -12,16 +12,20 @@ let s:import_end_esc_regex = '[^\\]$'
 " Initialize buffer
 function! SimpylFold#BufferInit() abort
     if &filetype ==# 'pyrex' || &filetype ==# 'cython'
-        let b:SimpylFold_def_regex = '\v^\s*%(%(class|%(async\s+)?def|cdef|cpdef|ctypedef)\s+\w+)|cdef\s*:'
+        let b:SimpylFold_def_regex =
+            \ '\v^\s*%(%(class|%(async\s+)?def|cdef|cpdef|ctypedef)\s+\w+)|cdef\s*:'
     else
-        let b:SimpylFold_def_regex = '\v^\s*%(class|%(async\s+)?def)\s+\w+|if\s+__name__\s*\=\=\s*%("__main__"|''__main__'')\s*:'
+        let b:SimpylFold_def_regex =
+            \ '\v^\s*%(class|%(async\s+)?def)\s+\w+|if\s+__name__\s*\=\=\s*%("__main__"|''__main__'')\s*:'
     endif
 
     if !exists('b:SimpylFold_fold_docstring')
-        let b:SimpylFold_fold_docstring = !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
+        let b:SimpylFold_fold_docstring =
+            \ !exists('g:SimpylFold_fold_docstring') || g:SimpylFold_fold_docstring
     endif
     if !exists('b:SimpylFold_fold_import')
-        let b:SimpylFold_fold_import = !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
+        let b:SimpylFold_fold_import =
+            \ !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     endif
 endfunction
 
@@ -94,7 +98,8 @@ function! s:cache() abort
 
         " Multiline strings
         if in_string
-            call add(cache, {'is_blank': 0, 'is_comment': 0, 'foldexpr': (len(defs_stack) + in_docstring)})
+            call add(cache, {'is_blank': 0, 'is_comment': 0,
+                        \    'foldexpr': (len(defs_stack) + in_docstring)})
             " Only match lines with odd number of endings
             if (len(split(line, string_end_regex, 1)) - 1) % 2
                 let in_string = 0
