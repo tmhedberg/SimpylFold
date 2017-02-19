@@ -4,7 +4,7 @@ let s:multi_def_end_regex = '):\s*$'
 let s:multi_def_end_solo_regex = '^\s*):\s*$'
 let s:string_prefix_regex = '^\s*[bBfFrRuU]\{0,2}\("""\|''''''\|"\|''\)'
 let s:multi_string_start_regex =
-    \ '^\([^''"]*\%(\([''"]\)\%([^''"]\|\\[''"]\)*\2\)*[^''"]*\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\3\s*$\)\@!'
+    \ '^\(\%([^''"]*\%(\([''"]\)\%([^''"]\|\\[''"]\)*\2\)\)*[^''"]*\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\3\s*$\)\@!'
 let s:import_start_regex = '^\s*\%(from\|import\)'
 let s:import_cont_regex = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
 let s:import_end_paren_regex = ')\s*$'
