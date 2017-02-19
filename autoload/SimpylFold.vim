@@ -3,7 +3,16 @@ let s:comment_regex = '^\s*#'
 let s:multi_def_end_regex = '):\s*$'
 let s:multi_def_end_solo_regex = '^\s*):\s*$'
 let s:string_prefix_regex = '^\s*[bBfFrRuU]\{0,2}\("""\|''''''\|"\|''\)'
-let s:multi_string_start_regex = '^\([^''"]\{-}\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\2\s*$\)\@!'
+" Match zero or more of the following:
+"   - A sequence of zero or more non-quote characters
+"   - A string, consisting of 2 matching quote characters, separated by zero
+"     or more of:
+"       - Non-quote characters
+"       - Escaped quote characters
+" Followed by another sequence of zero or more non-quote characters,
+" Followed by the start of a multi-line string
+let s:multi_string_start_regex =
+    \ '^\(\%([^''"]*\%(\([''"]\)\%([^''"]\|\\[''"]\)*\2\)\)*[^''"]*\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\3\s*$\)\@!'
 let s:import_start_regex = '^\s*\%(from\|import\)'
 let s:import_cont_regex = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
 let s:import_end_paren_regex = ')\s*$'
@@ -173,7 +182,7 @@ function! s:cache() abort
         let string_match = matchlist(line, s:multi_string_start_regex)
         if !empty(string_match)
             let in_string = 1
-            let string_end_regex = string_match[2]
+            let string_end_regex = string_match[3]
 
             " Docstrings
             if b:SimpylFold_fold_docstring && string_match[1] =~# s:blank_regex
