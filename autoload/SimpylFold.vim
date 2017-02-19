@@ -3,6 +3,14 @@ let s:comment_regex = '^\s*#'
 let s:multi_def_end_regex = '):\s*$'
 let s:multi_def_end_solo_regex = '^\s*):\s*$'
 let s:string_prefix_regex = '^\s*[bBfFrRuU]\{0,2}\("""\|''''''\|"\|''\)'
+" Match zero or more of the following:
+"   - A sequence of zero or more non-quote characters
+"   - A string, consisting of 2 matching quote characters, separated by zero
+"     or more of:
+"       - Non-quote characters
+"       - Escaped quote characters
+" Followed by another sequence of zero or more non-quote characters,
+" Followed by the start of a multi-line string
 let s:multi_string_start_regex =
     \ '^\(\%([^''"]*\%(\([''"]\)\%([^''"]\|\\[''"]\)*\2\)\)*[^''"]*\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\3\s*$\)\@!'
 let s:import_start_regex = '^\s*\%(from\|import\)'
