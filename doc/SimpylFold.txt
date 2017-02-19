@@ -1,7 +1,7 @@
 *SimpylFold.txt* No-BS Python code folding for Vim
 
-===============================================================================
-Introduction                                                         *SimpylFold*
+==============================================================================
+Introduction                                                        *SimpylFold*
 
 Because of its reliance on significant whitespace rather than explicit block
 delimiters, properly folding Python code can be tricky. The Python syntax
@@ -18,12 +18,10 @@ It's nothing more than it needs to be: it properly folds class and
 function/method definitions, and leaves your loops and conditional blocks
 untouched. There's no BS involved: no screwing around with unrelated options
 (which several of the other plugins do), no choice of algorithms to scratch
-your head over (because there's only one that's correct); it just works, simply.
+your head over (there's only one that's correct); it just works, simply.
 
-
-
-===============================================================================
-Configuration                                          *SimpylFold-configuration*
+==============================================================================
+Configuration                                         *SimpylFold-configuration*
 
 No configuration is necessary. However, there are a few configurable options.
 
@@ -57,16 +55,15 @@ There are also a few buffer local commands for fast toggling:
 | `SimpylFoldImports`       | Enable import folding     |
 | `SimpylFoldImports!`      | Disable import folding    |
 
-
-===============================================================================
-Usage                                                          *SimpylFold-usage*
+==============================================================================
+Usage                                                         *SimpylFold-usage*
 
 Use Vim's built-in folding commands to expand and collapse folds.
 The most basic commands are `zc` to close a fold and `zo` to open one.
 See `:help fold-commands` for full documentation.
 
-===============================================================================
-Bugs                                                            *SimpylFold-bugs*
+==============================================================================
+Bugs                                                           *SimpylFold-bugs*
 
-If you find any bugs, please report them and/or submit pull requests on GitHub!
+If you find any bugs, please report them and submit pull requests on GitHub!
 Simple is nice, but simple and correct is much better.

@@ -16,7 +16,7 @@ It's nothing more than it needs to be: it properly folds class and
 function/method definitions, and leaves your loops and conditional blocks
 untouched. There's no BS involved: no screwing around with unrelated options
 (which several of the other plugins do), no choice of algorithms to scratch
-your head over (because there's only one that's correct); it just works, simply.
+your head over (there's only one that's correct); it just works, simply.
 
 Installation
 ------------
@@ -71,7 +71,7 @@ See `:help fold-commands` for full documentation.
 Bugs
 ----
 
-If you find any bugs, please report them and/or submit pull requests on GitHub!
+If you find any bugs, please report them and submit pull requests on GitHub!
 Simple is nice, but simple and correct is much better.
 
 Happy hacking!
