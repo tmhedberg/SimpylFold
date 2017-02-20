@@ -2,8 +2,9 @@ let s:blank_regex = '^\s*$'
 let s:comment_regex = '^\s*#'
 let s:multi_def_end_regex = '):\s*$'
 let s:multi_def_end_solo_regex = '^\s*):\s*$'
-let s:string_prefix_regex = '^\s*[bBfFrRuU]\{0,2}\("""\|''''''\|"\|''\)'
-let s:multi_string_start_regex = '^\([^''"]\{-}\)[bBfFrRuU]\{0,2}\("""\|''''''\)\%(.*\2\s*$\)\@!'
+let s:string_prefix_regex = '^\s*[bBfFrRuU]\{0,2}\\\@<!\("""\|''''''\|"\|''\)'
+let s:multi_string_start_regex = '[bBfFrRuU]\{0,2}\\\@<!\%(''''''\|"""\)'
+let s:string_prefix_regex = '^[bBfFrRuU]\{0,2}'
 let s:import_start_regex = '^\s*\%(from\|import\)'
 let s:import_cont_regex = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
 let s:import_end_paren_regex = ')\s*$'
@@ -80,6 +81,44 @@ function! s:are_lines_prev_blank(cache, lnum) abort
     return 1
 endfunction
 
+" Multiline string parsing
+function! s:multi_string(line, first_regex, in_string) abort
+    let string_match = matchstrpos(a:line, a:first_regex)
+    if string_match[1] == -1
+        return [a:in_string, 0, '', '']
+    endif
+
+    " Anything before first match?
+    if string_match[1] >= 1
+        let before_first = a:line[:(string_match[1] - 1)]
+    else
+        let before_first = ''
+    endif
+
+    let in_string = a:in_string
+    let next_regex = ''
+    let line_slice = a:line
+    let found_end = 0
+    while string_match[1] != -1
+        if in_string
+            let in_string = 0
+            let found_end = 1
+            let next_regex = s:multi_string_start_regex
+        else
+            let in_string = 1
+            let next_regex = string_match[0][(matchend(string_match[0], s:string_prefix_regex)):]
+        endif
+
+        let line_slice = line_slice[(string_match[2]):]
+        if empty(line_slice)
+            break
+        endif
+        let string_match = matchstrpos(line_slice, next_regex)
+    endwhile
+
+    return [in_string, (in_string && found_end), next_regex, before_first]
+endfunction
+
 " Create a new cache
 function! s:cache() abort
     let cache = [{}]  " With padding for lnum offset
@@ -90,7 +129,7 @@ function! s:cache() abort
     let defs_stack = []
     let ind_def = -1
     let in_string = 0
-    let in_docstring = 0
+    let docstring_start = -1
     let in_import = 0
     let was_import = 0
     for lnum in range(1, lnum_last)
@@ -98,12 +137,26 @@ function! s:cache() abort
 
         " Multiline strings
         if in_string
-            call add(cache, {'is_blank': 0, 'is_comment': 0,
-                \            'foldexpr': (len(defs_stack) + in_docstring)})
-            " Only match lines with odd number of endings
-            if (len(split(line, string_end_regex, 1)) - 1) % 2
+            let foldlevel = len(defs_stack)
+            call add(cache, {'is_blank': 0, 'is_comment': 0, 'foldexpr': foldlevel})
+
+            let string_match = s:multi_string(line, string_end_regex, 1)
+            if string_match[0]
+                " Starting new multiline string?
+                if string_match[1]
+                    let string_end_regex = string_match[2]
+                    let docstring_start = -1  " Invalid docstring
+                endif
+            else
+                if docstring_start != -1
+                    let foldlevel += 1
+                    let cache[docstring_start]['foldexpr'] = '>' . foldlevel
+                    for lnum_docstring in range((docstring_start + 1), lnum)
+                        let cache[lnum_docstring]['foldexpr'] = foldlevel
+                    endfor
+                    let docstring_start = -1
+                endif
                 let in_string = 0
-                let in_docstring = 0
             endif
             continue
         endif
@@ -170,13 +223,13 @@ function! s:cache() abort
         let foldlevel = len(defs_stack)
 
         " Multiline strings start
-        let string_match = matchlist(line, s:multi_string_start_regex)
-        if !empty(string_match)
+        let string_match = s:multi_string(line, s:multi_string_start_regex, 0)
+        if string_match[0]
             let in_string = 1
             let string_end_regex = string_match[2]
 
             " Docstrings
-            if b:SimpylFold_fold_docstring && string_match[1] =~# s:blank_regex
+            if b:SimpylFold_fold_docstring && !string_match[1] && string_match[3] =~# s:blank_regex
                 let lnum_prev = lnum - 1
                 if lnum == 1 || s:are_lines_prev_blank(cache, lnum) || (
                         \ !cache[lnum_prev]['is_blank'] && !cache[lnum_prev]['is_comment'] && (
@@ -184,9 +237,7 @@ function! s:cache() abort
                             \ lines[lnum_prev] =~# s:multi_def_end_regex
                         \ )
                     \ )
-                    let in_docstring = 1
-                    let cache[lnum]['foldexpr'] = '>' . (foldlevel + 1)
-                    continue
+                    let docstring_start = lnum
                 endif
             endif
 
