@@ -28,6 +28,9 @@ Use one of the following plugin managers:
 * [vundle](https://github.com/VundleVim/Vundle.vim)
 * [pathogen](https://github.com/tpope/vim-pathogen)
 
+Also strongly recommend using [FastFold](https://github.com/Konfekt/FastFold)
+due to Vim's folding being extremely slow by default.
+
 Configuration
 -------------
 
