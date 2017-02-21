@@ -3,8 +3,9 @@ let s:comment_re = '^\s*#'
 let s:multi_def_end_re = '):\s*$'
 let s:multi_def_end_solo_re = '^\s*):\s*$'
 let s:docstring_re = '^\s*[bBfFrRuU]\{0,2}\\\@<!\(''''''\|"""\|[''"]\)'
-let s:multi_string_start_re = '[bBfFrRuU]\{0,2}\\\@<!\%(''''''\|"""\|\%([''"]\ze\%(\\[''"]\|[^''"]\)*\\$\)\)'
+let s:string_start_re = '[bBfFrRuU]\{0,2}\\\@<!\%(''''''\|"""\|[''"]\)'
 let s:string_prefix_re = '[bBfFrRuU]\{0,2}'
+let s:line_cont_re = '\\$'
 let s:import_start_re = '^\s*\%(from\|import\)'
 let s:import_cont_re = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
 let s:import_end_paren_re = ')\s*$'
@@ -94,15 +95,21 @@ function! s:matchstrpos(expr, pat) abort
 endfunction
 
 " Multiline string parsing
+" Returns:
+"     - bool: In string?
+"     - bool: Single quoted?
+"     - bool: Found multiple strings?
+"     - string: End regex.
+"     - string: Everything before first match.
 function! s:multi_string(line, first_re, in_string) abort
     " 2x performance for general case
-    if match(a:line, '[''"]') == -1
-        return [a:in_string, 0, '', '']
+    if a:line !~# '[''"]'
+        return [a:in_string, 0, 0, '', '']
     endif
 
     let string_match = s:matchstrpos(a:line, a:first_re)
     if string_match[1] == -1
-        return [a:in_string, 0, '', '']
+        return [a:in_string, 0, 0, '', '']
     endif
 
     " Anything before first match?
@@ -115,16 +122,16 @@ function! s:multi_string(line, first_re, in_string) abort
     let in_string = a:in_string
     let next_re = ''
     let line_slice = a:line
-    let found_end = 0
+    let found_ends = 0
     while string_match[1] != -1
         if in_string
             let in_string = 0
-            let found_end = 1
-            let next_re = s:multi_string_start_re
+            let found_ends += 1
+            let next_re = s:string_start_re
         else
             let in_string = 1
-            let next_re = '\\\@<!' .
-                \ string_match[0][matchend(string_match[0], s:string_prefix_re):]
+            let quotes = string_match[0][matchend(string_match[0], s:string_prefix_re):]
+            let next_re = '\\\@<!' . quotes
         endif
 
         let line_slice = line_slice[(string_match[2]):]
@@ -134,7 +141,17 @@ function! s:multi_string(line, first_re, in_string) abort
         let string_match = s:matchstrpos(line_slice, next_re)
     endwhile
 
-    return [in_string, (in_string && found_end), next_re, before_first]
+    if in_string
+        " Check if in single quoted string and line continues
+        let single_quoted = quotes =~# '^[''"]$'
+        if single_quoted && line_slice !~# s:line_cont_re
+            return [0, single_quoted, (found_ends >= 1), '', before_first]
+        else
+            return [1, single_quoted, (found_ends >= 1), next_re, before_first]
+        endif
+    else
+        return [0, 0, (found_ends >= 2), '', before_first]
+    endif
 endfunction
 
 " Create a new cache
@@ -161,9 +178,12 @@ function! s:cache() abort
             let string_match = s:multi_string(line, string_end_re, 1)
             if string_match[0]
                 " Starting new multiline string?
-                if string_match[1]
-                    let string_end_re = string_match[2]
+                if string_match[2]
+                    let in_string_single = string_match[1]
+                    let string_end_re = string_match[3]
                     let docstring_start = -1  " Invalid docstring
+                elseif in_string_single && line !~# s:line_cont_re
+                    let in_string = 0
                 endif
             else
                 if docstring_start != -1
@@ -241,13 +261,14 @@ function! s:cache() abort
         let foldlevel = len(defs_stack)
 
         " Multiline strings start
-        let string_match = s:multi_string(line, s:multi_string_start_re, 0)
+        let string_match = s:multi_string(line, s:string_start_re, 0)
         if string_match[0]
             let in_string = 1
-            let string_end_re = string_match[2]
+            let in_string_single = string_match[1]
+            let string_end_re = string_match[3]
 
             " Docstrings
-            if b:SimpylFold_fold_docstring && !string_match[1] && string_match[3] =~# s:blank_re
+            if b:SimpylFold_fold_docstring && !string_match[2] && string_match[4] =~# s:blank_re
                 let lnum_prev = lnum - 1
                 if lnum == 1 || s:are_lines_prev_blank(cache, lnum) || (
                         \ !cache[lnum_prev]['is_blank'] && !cache[lnum_prev]['is_comment'] && (
