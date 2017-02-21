@@ -80,12 +80,12 @@ function! s:are_lines_prev_blank(cache, lnum) abort
     return 1
 endfunction
 
-" Compatibility function
-" Adds about 3us per call when `has_matchstrpos`
-" Otherwise adds about 18us per call
-let s:has_matchstrpos = has('patch-7.4.1685')
+" Compatibility shim
+" 1.1x slower when `matchstrpos` exists
+" 2.5x slower otherwise
+let s:exists_matchstrpos = exists('*matchstrpos')
 function! s:matchstrpos(expr, pat) abort
-    if s:has_matchstrpos
+    if s:exists_matchstrpos
         return matchstrpos(a:expr, a:pat)
     else
         return [matchstr(a:expr, a:pat), match(a:expr, a:pat), matchend(a:expr, a:pat)]
@@ -94,7 +94,7 @@ endfunction
 
 " Multiline string parsing
 function! s:multi_string(line, first_re, in_string) abort
-    " Improves performance by 50% for general case
+    " 2x performance for general case
     if match(a:line, '''\|"') == -1
         return [a:in_string, 0, '', '']
     endif
