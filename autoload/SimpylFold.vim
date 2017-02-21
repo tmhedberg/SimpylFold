@@ -2,7 +2,7 @@ let s:blank_re = '^\s*$'
 let s:comment_re = '^\s*#'
 let s:multi_def_end_re = '):\s*$'
 let s:multi_def_end_solo_re = '^\s*):\s*$'
-let s:string_prefix_re = '^\s*[bBfFrRuU]\{0,2}\\\@<!\("""\|''''''\|"\|''\)'
+let s:string_start_re = '^\s*[bBfFrRuU]\{0,2}\\\@<!\("""\|''''''\|"\|''\)'
 let s:multi_string_start_re = '[bBfFrRuU]\{0,2}\\\@<!\%(''''''\|"""\)'
 let s:import_start_re = '^\s*\%(from\|import\)'
 let s:import_cont_re = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
@@ -324,10 +324,10 @@ endfunction
 function! SimpylFold#FoldText() abort
     let lnum = v:foldstart
     let line = getline(lnum)
-    let string_match = matchlist(line, s:string_prefix_re)
+    let string_match = matchlist(line, s:string_start_re)
     " Docstring folds
     if !empty(string_match)
-        let docstring = substitute(line, s:string_prefix_re, '', '')
+        let docstring = substitute(line, s:string_start_re, '', '')
         if docstring !~# s:blank_re
             return ''
         endif
@@ -336,11 +336,11 @@ function! SimpylFold#FoldText() abort
     else
         let lnum = nextnonblank(lnum + 1)
         let line = getline(lnum)
-        let string_match = matchlist(line, s:string_prefix_re)
+        let string_match = matchlist(line, s:string_start_re)
         if empty(string_match)
             return ''
         endif
-        let docstring = substitute(line, s:string_prefix_re, '', '')
+        let docstring = substitute(line, s:string_start_re, '', '')
         if docstring =~# s:blank_re
             let docstring = getline(nextnonblank(lnum + 1))
         endif
