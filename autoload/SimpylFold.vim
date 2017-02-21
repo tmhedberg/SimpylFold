@@ -2,8 +2,9 @@ let s:blank_re = '^\s*$'
 let s:comment_re = '^\s*#'
 let s:multi_def_end_re = '):\s*$'
 let s:multi_def_end_solo_re = '^\s*):\s*$'
-let s:string_start_re = '^\s*[bBfFrRuU]\{0,2}\\\@<!\("""\|''''''\|"\|''\)'
-let s:multi_string_start_re = '[bBfFrRuU]\{0,2}\\\@<!\%(''''''\|"""\)'
+let s:string_start_re = '^\s*[bBfFrRuU]\{0,2}\\\@<!\(''''''\|"""\|["'']\)'
+let s:multi_string_start_re = '[bBfFrRuU]\{0,2}\\\@<!\%(''''''\|"""\|\%([''"]\ze\%(\\[''"]\|[^''"]\)*\\$\)\)'
+let s:string_prefix_re = '[bBfFrRuU]\{0,2}'
 let s:import_start_re = '^\s*\%(from\|import\)'
 let s:import_cont_re = '\%(from.*\((\)[^)]*\|.*\(\\\)\)$'
 let s:import_end_paren_re = ')\s*$'
@@ -122,7 +123,8 @@ function! s:multi_string(line, first_re, in_string) abort
             let next_re = s:multi_string_start_re
         else
             let in_string = 1
-            let next_re = string_match[0][-3:] " Must always be 3 chars
+            let next_re = '\\\@<!' .
+                \ string_match[0][matchend(string_match[0], s:string_prefix_re):]
         endif
 
         let line_slice = line_slice[(string_match[2]):]
