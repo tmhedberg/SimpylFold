@@ -96,7 +96,7 @@ endfunction
 " Multiline string parsing
 function! s:multi_string(line, first_re, in_string) abort
     " 2x performance for general case
-    if match(a:line, '''\|"') == -1
+    if match(a:line, '[''"]') == -1
         return [a:in_string, 0, '', '']
     endif
 
