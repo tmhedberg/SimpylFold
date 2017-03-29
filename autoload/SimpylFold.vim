@@ -201,7 +201,12 @@ function! s:cache() abort
 
         " Blank lines
         if line =~# s:blank_re
-            call add(cache, {'is_blank': 1, 'is_comment': 0, 'foldexpr': len(defs_stack)})
+            if lnum == lnum_last
+                call add(cache, {'is_blank': 1, 'is_comment': 0, 'foldexpr': 0})
+                call s:blanks_adj(cache, lnum, 0)
+            else
+                call add(cache, {'is_blank': 1, 'is_comment': 0, 'foldexpr': len(defs_stack)})
+            endif
             continue
         endif
 
