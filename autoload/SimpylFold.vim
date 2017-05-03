@@ -33,7 +33,7 @@ endfunction
 
 " Calculate indent
 function! s:indent(line) abort
-    let ind = matchend(a:line, '^ *') / &softtabstop
+    let ind = matchend(a:line, '^ *') / (&softtabstop == 0 ? &tabstop : &softtabstop)
     if ind == 0
         let ind = matchend(a:line, '^\t*')
     endif
