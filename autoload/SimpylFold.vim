@@ -31,9 +31,19 @@ function! SimpylFold#BufferInit() abort
     endif
 endfunction
 
+" Get spaces per indent setting
+function! s:indent_spaces() abort
+    if &softtabstop > 0
+        return &softtabstop
+    elseif &softtabstop < 0 && &shiftwidth > 0
+        return &shiftwidth
+    endif
+    return &tabstop
+endfunction
+
 " Calculate indent
-function! s:indent(line) abort
-    let ind = matchend(a:line, '^ *') / (&softtabstop == 0 ? &tabstop : &softtabstop)
+function! s:indent(line, ind_spaces) abort
+    let ind = matchend(a:line, '^ *') / a:ind_spaces
     if ind == 0
         let ind = matchend(a:line, '^\t*')
     endif
@@ -161,6 +171,8 @@ function! s:cache() abort
     let lnum_last = len(lines)
     call insert(lines, '')  " Padding for lnum offset
 
+    let ind_spaces = s:indent_spaces()
+
     let defs_stack = []
     let ind_def = -1
     let in_string = 0
@@ -210,7 +222,7 @@ function! s:cache() abort
             continue
         endif
 
-        let ind = s:indent(line)
+        let ind = s:indent(line, ind_spaces)
 
         " Comments
         if line =~# s:comment_re
