@@ -45,13 +45,27 @@ following command to your `~/.config/nvim/init.vim` or `~/.vimrc`:
 ```vim
 let g:SimpylFold_docstring_preview = 1
 ```
-| Variable                         | Description                    | Default |
-| -------------------------------- | ------------------------------ | ------- |
-| `g:SimpylFold_docstring_preview` | Preview docstring in fold text | `0`     |
-| `g:SimpylFold_fold_docstring`    | Fold docstrings                | `1`     |
-| `b:SimpylFold_fold_docstring`    | Fold docstrings (buffer local) | `1`     |
-| `g:SimpylFold_fold_import`       | Fold imports                   | `1`     |
-| `b:SimpylFold_fold_import`       | Fold imports (buffer local)    | `1`     |
+| Variable                              | Description                    | Default |
+| ------------------------------------- | ------------------------------ | ------- |
+| `g:SimpylFold_docstring_preview`      | Preview docstring in fold text | `0`     |
+| `g:SimpylFold_fold_docstring`         | Fold docstrings                | `1`     |
+| `b:SimpylFold_fold_docstring`         | Fold docstrings (buffer local) | `1`     |
+| `g:SimpylFold_fold_import`            | Fold imports                   | `1`     |
+| `b:SimpylFold_fold_import`            | Fold imports (buffer local)    | `1`     |
+| `g:SimpylFold_unfold_function_names`  | Fold imports                   | `0`     |
+| `b:SimpylFold_unfold_function_names`  | Fold imports (buffer local)    | `0`     |
+| `g:SimpylFold_unfold_docstring`       | Fold imports                   | `0`     |
+| `b:SimpylFold_unfold_docstring`       | Fold imports (buffer local)    | `0`     |
+
+Using `SimpylFold_unfold_docstring` does have some caveats:
+
+To work properly, it needs `SimpylFold_fold_docstring` to be set to the
+default value `1` to find the docstring starting location. In addition, 
+`SimpylFold_fold_docstring` overrides the affect of 
+`SimpylFold_unfold_function_names` by having function names visible 
+constantly. This is intentional, but `g:SimpylFold_unfold_function_names`
+should still be set to 1 in the `.vimrc` file to properly handle double 
+lined function or class definitions. 
 
 ### Commands
 
