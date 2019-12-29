@@ -29,6 +29,14 @@ function! SimpylFold#BufferInit() abort
         let b:SimpylFold_fold_import =
             \ !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     endif
+    if !exists('b:SimpylFold_unfold_function_name')
+        let b:SimpylFold_unfold_function_name=
+            \ !exists('g:SimpylFold_unfold_function_name') || g:SimpylFold_unfold_function_name
+    endif
+    if !exists('b:SimpylFold_unfold_docstring')
+        let b:SimpylFold_unfold_docstring=
+            \ !exists('g:SimpylFold_unfold_docstring') || g:SimpylFold_unfold_docstring
+    endif
 endfunction
 
 " Get spaces per indent setting
@@ -200,9 +208,15 @@ function! s:cache() abort
             else
                 if docstring_start != -1
                     let foldlevel += 1
-                    let cache[docstring_start]['foldexpr'] = '>' . foldlevel
+                    if b:SimpylFold_unfold_docstring
+                        let cache[docstring_start]['foldexpr'] = 0
+                        let docfold = 0
+                    else
+                        let cache[docstring_start]['foldexpr'] =  '>' . foldlevel
+                        let docfold = foldlevel
+                    endif
                     for lnum_docstring in range((docstring_start + 1), lnum)
-                        let cache[lnum_docstring]['foldexpr'] = foldlevel
+                        let cache[lnum_docstring]['foldexpr'] = docfold
                     endfor
                     let docstring_start = -1
                 endif
@@ -257,7 +271,10 @@ function! s:cache() abort
             let foldlevel = len(defs_stack) - 1
             let ind_def = ind
             call s:blanks_adj(cache, lnum, foldlevel)
-            let cache[lnum]['foldexpr'] = '>' . (foldlevel + 1)
+            let cache[lnum+b:SimpylFold_unfold_function_name]['foldexpr'] = '>' . (foldlevel + 1)
+            if b:SimpylFold_unfold_function_name
+                let cache[lnum]['foldexpr'] = (foldlevel + 1 - b:SimpylFold_unfold_function_name)
+            endif
             continue
         endif
 
