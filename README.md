@@ -52,10 +52,10 @@ let g:SimpylFold_docstring_preview = 1
 | `b:SimpylFold_fold_docstring`         | Fold docstrings (buffer local) | `1`     |
 | `g:SimpylFold_fold_import`            | Fold imports                   | `1`     |
 | `b:SimpylFold_fold_import`            | Fold imports (buffer local)    | `1`     |
-| `g:SimpylFold_unfold_function_names`  | Fold imports                   | `0`     |
-| `b:SimpylFold_unfold_function_names`  | Fold imports (buffer local)    | `0`     |
-| `g:SimpylFold_unfold_docstring`       | Fold imports                   | `0`     |
-| `b:SimpylFold_unfold_docstring`       | Fold imports (buffer local)    | `0`     |
+| `g:SimpylFold_unfold_function_names`  | Fold imports                   | `1`     |
+| `b:SimpylFold_unfold_function_names`  | Fold imports (buffer local)    | `1`     |
+| `g:SimpylFold_unfold_docstring`       | Fold imports                   | `1`     |
+| `b:SimpylFold_unfold_docstring`       | Fold imports (buffer local)    | `1`     |
 
 Using `SimpylFold_unfold_docstring` does have some caveats:
 
