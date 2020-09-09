@@ -29,6 +29,10 @@ function! SimpylFold#BufferInit() abort
         let b:SimpylFold_fold_import =
             \ !exists('g:SimpylFold_fold_import') || g:SimpylFold_fold_import
     endif
+    if !exists('b:SimpylFold_fold_blank')
+        let b:SimpylFold_fold_blank =
+            \ exists('g:SimpylFold_fold_blank') && g:SimpylFold_fold_blank
+    endif
 endfunction
 
 " Get spaces per indent setting
@@ -68,6 +72,9 @@ endfunction
 
 " Adjust previous blanks and comments
 function! s:blanks_adj(cache, lnum, foldlevel) abort
+    if b:SimpylFold_fold_blank
+        return
+    endif
     let lnum_prev = a:lnum - 1
     while lnum_prev != 0 && (
             \ a:cache[lnum_prev]['is_blank'] || (

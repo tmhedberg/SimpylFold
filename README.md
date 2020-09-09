@@ -52,6 +52,8 @@ let g:SimpylFold_docstring_preview = 1
 | `b:SimpylFold_fold_docstring`    | Fold docstrings (buffer local) | `1`     |
 | `g:SimpylFold_fold_import`       | Fold imports                   | `1`     |
 | `b:SimpylFold_fold_import`       | Fold imports (buffer local)    | `1`     |
+| `g:SimpylFold_fold_blank`        | Fold trailing blank lines      | `0`     |
+| `b:SimpylFold_fold_blank`        | Fold trailing blanks (buffer)  | `0`     |
 
 ### Commands
 
