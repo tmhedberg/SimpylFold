@@ -42,6 +42,8 @@ following command to your `~/.config/nvim/init.vim` or `~/.vimrc`: >
 | `b:SimpylFold_fold_docstring`     | Fold docstrings (buffer local) | `1`       |
 | `g:SimpylFold_fold_import`        | Fold imports                   | `1`       |
 | `b:SimpylFold_fold_import`        | Fold imports (buffer local)    | `1`       |
+| `g:SimpylFold_fold_blank`         | Fold trailing blank lines      | `0`       |
+| `b:SimpylFold_fold_blank`         | Same as above (buffer local)   | `0`       |
 
 Commands
 --------
